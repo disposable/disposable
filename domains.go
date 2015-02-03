@@ -1,7 +1,7 @@
 package disposable
 
 // Domains is a list of disposable email domains, stored as a map[string]struct{} for efficiency
-var Domains = map[string]struct{}{
+var Domains = map[string]struct{} {
 	"0-mail.com": struct{}{},
 	"0815.ru": struct{}{},
 	"0clickemail.com": struct{}{},
