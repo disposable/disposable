@@ -12,6 +12,7 @@ import (
 	"os"
 	"regexp"
 	"sort"
+	"strings"
 )
 
 var sources = map[string][]string{
@@ -50,7 +51,7 @@ func main() {
 						log.Println("[warning] [", url, "]\n--- Wrong input:", crt)
 						continue
 					}
-					domains[crt] = struct{}{}
+					domains[strings.ToLower(crt)] = struct{}{}
 				}
 				break
 			case "json":
@@ -60,7 +61,7 @@ func main() {
 					log.Fatal(err)
 				}
 				for _, crt := range buf {
-					domains[crt] = struct{}{}
+					domains[strings.ToLower(crt)] = struct{}{}
 				}
 			}
 		}
