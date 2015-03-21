@@ -1,5 +1,15 @@
 package disposable
 
+import "strings"
+
+// IsReliable checks if the passed domain is reliable
+func IsReliable(domain string) bool {
+	if _, ok := Domains[strings.ToLower(domain)]; ok {
+		return false
+	}
+	return true
+}
+
 // Domains is a list of disposable email domains, stored as a map[string]struct{} for efficiency
 var Domains = map[string]struct{} {
 	"0-mail.com": struct{}{},
