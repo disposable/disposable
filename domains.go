@@ -1,5 +1,15 @@
 package disposable
 
+import "strings"
+
+// IsReliable checks if the passed domain is reliable
+func IsReliable(domain string) bool {
+	if _, ok := Domains[strings.ToLower(domain)]; ok {
+		return false
+	}
+	return true
+}
+
 // Domain tests whether a string is among the known set of disposable mailboxes
 func Domain(d string) bool {
 	if _, ok := domains[d]; ok {

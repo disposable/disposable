@@ -7,7 +7,7 @@
 ```lang=go
 import "github.com/lavab/disposable"
 
-if _, ok := disposable.Domains[strings.ToLower(aDomain)]; ok {
+if !disposable.IsReliable(aDomain) {
    log.Println("Domain", aDomain, "is not reliable, sorry.")
    panic("Why not panic?")
 }
