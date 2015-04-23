@@ -517,7 +517,6 @@ var Domains = map[string]struct{} {
 	"punkass.com": struct{}{},
 	"putthisinyourspamdatabase.com": struct{}{},
 	"pwrby.com": struct{}{},
-	"qq.com": struct{}{},
 	"quickinbox.com": struct{}{},
 	"quickmail.nl": struct{}{},
 	"rcpt.at": struct{}{},
