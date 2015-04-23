@@ -43,6 +43,7 @@
 9ox.net
 a-bc.net
 a45.in
+abcmail.email
 acentri.com
 advantimo.com
 afrobacon.com
@@ -251,6 +252,7 @@ fastyamaha.com
 fatflap.com
 fdfdsfds.com
 fightallspam.com
+fiifke.de
 filzmail.com
 fivemail.de
 fixmail.tk
@@ -351,6 +353,10 @@ incognitomail.com
 incognitomail.net
 incognitomail.org
 infocom.zp.ua
+inoutmail.de
+inoutmail.eu
+inoutmail.info
+inoutmail.net
 insorg-mail.info
 instant-mail.de
 ip6.li
@@ -639,6 +645,7 @@ shitmail.org
 shitware.nl
 shmeriously.com
 shortmail.net
+showslow.de
 sibmail.com
 sinnlos-mail.de
 siteposter.net
