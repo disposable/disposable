@@ -1,7 +1,11 @@
 Disposable
 ==========
 
-This is a simple, auto-updating (sort of) list of domains of temporary (or *disposable*) mailboxes. It can be used to quickly weed out people not really interested in your service.
+[![GoDoc](https://godoc.org/github.com/lavab/disposable?status.svg)](https://godoc.org/github.com/lavab/disposable)
+
+This is a simple, auto-updating (sort of) list of domains of temporary (or *disposable*) mailboxes.
+
+It can be used to quickly weed out people not really interested in your service.
 
 Usage
 -----
