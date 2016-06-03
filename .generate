@@ -7,7 +7,7 @@ import urllib.request
 sources = {
     'line': ["https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7",
              "https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912",
-             ],
+             "https://raw.githubusercontent.com/wesbos/burner-email-providers/7f3c191e876790b7a01b053a8319a59183037993/emails.txt"],
     'json': ["https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json"]
 }
 
