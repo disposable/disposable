@@ -8,8 +8,8 @@ for (let d of require('./domains')) {
 module.exports = {
     validate: (domain, callback) => {
         if (!callback) {
-            return domainMap.hasOwnProperty(domain);
+            return !domainMap.hasOwnProperty(domain);
         }
-        callback(null, domainMap.hasOwnProperty(domain));
+        callback(null, !domainMap.hasOwnProperty(domain));
     }
 }
