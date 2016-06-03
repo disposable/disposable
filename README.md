@@ -1,5 +1,6 @@
 ## Disposable email domains
 
+[![npm](https://badge.fury.io/js/disposable-email.svg)](https://www.npmjs.com/package/disposable-email)
 [![GoDoc](https://godoc.org/github.com/lavab/disposable?status.svg)](https://godoc.org/github.com/lavab/disposable)
 
 A collection of domains for disposable email services like [10MinuteMail](http://10minutemail.com) and [GuerrillaMail](https://www.guerrillamail.com). Also, some 🛠 to make your life easier.
