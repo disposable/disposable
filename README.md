@@ -41,11 +41,11 @@ npm i --save disposable-email
 var disposable = require('disposable-email');
 
 disposable.validate('gmail.com');
-// false
+// true
 
 disposable.validate('gmail.com', console.log);
 // undefined
-// null false
+// null true
 ```
 
 * Go
