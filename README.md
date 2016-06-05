@@ -1,7 +1,7 @@
 ## Disposable email domains
 
 [![npm](https://badge.fury.io/js/disposable-email.svg)](https://www.npmjs.com/package/disposable-email)
-[![GoDoc](https://godoc.org/github.com/lavab/disposable?status.svg)](https://godoc.org/github.com/lavab/disposable)
+[![GoDoc](https://godoc.org/github.com/andreis/disposable?status.svg)](https://godoc.org/github.com/andreis/disposable)
 
 A collection of domains for disposable email services like [10MinuteMail](http://10minutemail.com) and [GuerrillaMail](https://www.guerrillamail.com). Also, some 🛠 to make your life easier.
 
@@ -13,20 +13,20 @@ Use it to validate email addresses on sign up, or just to see how many real emai
 
 * list
 
-A [file](https://raw.githubusercontent.com/lavab/disposable/master/domains.txt)
+A [file](https://raw.githubusercontent.com/andreis/disposable/master/domains.txt)
 containing a sorted list of domains, one per line.
 
 ```
-curl https://raw.githubusercontent.com/lavab/disposable/master/domains.txt
+curl https://raw.githubusercontent.com/andreis/disposable/master/domains.txt
 ```
 
 * JSON array
 
-A [file](https://raw.githubusercontent.com/lavab/disposable/master/domains.json)
+A [file](https://raw.githubusercontent.com/andreis/disposable/master/domains.json)
 containing a sorted array of domains, in JSON format.
 
 ```
-curl https://raw.githubusercontent.com/lavab/disposable/master/domains.json
+curl https://raw.githubusercontent.com/andreis/disposable/master/domains.json
 ```
 
 * javascript
@@ -51,7 +51,7 @@ disposable.validate('gmail.com', console.log);
 * Go
 
 ```lang=go
-import "github.com/lavab/disposable"
+import "github.com/andreis/disposable"
 
 if disposable.Domain("gmail.com") {
     panic("Uh oh!")
