@@ -1,7 +1,6 @@
 package disposable
 
 import (
-	"fmt"
 	"io/ioutil"
 	"strings"
 )
