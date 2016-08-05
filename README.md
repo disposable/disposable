@@ -74,3 +74,11 @@ Fetched 1110 domains
 -	https://github.com/adamloving
 -	https://github.com/michenriksen
 -	https://github.com/ivolo
+
+### CDN
+
+Production: https://rawcdn.githack.com/andreis/disposable/master/domains.json
+
+Development: https://raw.githack.com/andreis/disposable/master/domains.json
+
+by: https://raw.githack.com/
