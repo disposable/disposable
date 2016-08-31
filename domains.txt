@@ -1172,9 +1172,9 @@ wr.moeri.org
 wronghead.com
 wuzup.net
 wuzupmail.net
-www.e4ward.com
-www.gishpuppy.com
-www.mailinator.com
+e4ward.com
+gishpuppy.com
+mailinator.com
 wwwnew.eu
 xagloo.com
 xemaps.com
