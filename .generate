@@ -3,12 +3,14 @@
 import json
 import re
 import urllib.request
+import sys
 
 sources = {
-    'line': ["https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7",
-             "https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912",
-             "https://raw.githubusercontent.com/wesbos/burner-email-providers/7f3c191e876790b7a01b053a8319a59183037993/emails.txt"],
-    'json': ["https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json"]
+    'line': ['https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7',
+             'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
+             'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt'],
+    'json': ['https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'],
+    'discard.email': ['https://discard.email/about-getDomains=55bea3fee498cb80f4d3060b738a5936.htm']
 }
 
 domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
@@ -17,43 +19,24 @@ out_file = 'domains'
 supported_formats = list(sources.keys())
 
 skip = ['qq.com']
-banlist = ['0815.ru',
-           '0815.su',
-           'a45.in',
-           'abcmail.email',
-           'bund.us',
-           'bundes-li.ga',
-           'cachedot.net',
-           'discard.email',
-           'discardmail.com',
-           'discardmail.de',
-           'fiifke.de',
-           'freundin.ru',
-           'hartbot.de',
-           'hulapla.de',
-           'inoutmail.de',
-           'inoutmail.eu',
-           'inoutmail.info',
-           'inoutmail.net',
-           'loadby.us',
-           'manifestgenerator.com',
-           'mvrht.com',
-           'nonspam.eu',
-           'nonspammer.de',
-           'noref.in',
-           'pfui.ru',
-           's0ny.net',
-           'showslow.de',
-           'spambog.com',
-           'spambog.de',
-           'spambog.ru',
-           'spamstack.net',
-           'sweetxxx.de',
-           'teewars.org',
-           'teleosaurs.xyz',
-           'webuser.in',
-           'yapped.net']
-
+banlist = [
+    'a45.in',
+    'bund.us',
+    'bundes-li.ga',
+    'cachedot.net',
+    'manifestgenerator.com',
+    'mvrht.com',
+    'nonspam.eu',
+    'nonspammer.de',
+    'spamstack.net',
+    'teleosaurs.xyz',
+    'webuser.in',
+    'you-spam.com',
+    're-gister.com',
+    'fake-box.com',
+    'trash-me.com',
+    'opentrash.com'
+]
 
 def process_url(url, fmt, encoding='utf-8', timeout=3):
     if fmt not in supported_formats:
@@ -76,6 +59,15 @@ def process_url(url, fmt, encoding='utf-8', timeout=3):
                 'WRN This URL does not contain a JSON array: {0}'.format(url))
             return
         lines = list(filter(lambda line: line and isinstance(line, str), raw))
+    elif fmt == 'discard.email':
+        raw = json.loads(data.decode(encoding))
+        if not raw.get('active') or \
+           not isinstance(raw['active'], list) or \
+           not raw['active'][0].get('domain'):
+            print(
+                'WRN The discard.email list format has changed: {0}'.format(url))
+            return
+        lines = list(map(lambda line: line['domain'], raw['active']))
 
     lines = [line.lower().strip(' .,;') for line in lines]
     lines = list(filter(lambda line: domain_regex.match(line), lines))
@@ -100,12 +92,35 @@ if __name__ == '__main__':
     with open(out_file + '.txt') as ff:
         for line in ff.read().split():
             old_domains[line] = None
+
     added = list(
         filter(lambda domain: domain not in old_domains, domains.keys()))
     removed = list(
         filter(lambda domain: domain not in domains, old_domains.keys()))
 
+    invalid = []
+    if '--dns-verify' in sys.argv:
+        import dns.resolver
+        print('Check for domains without MX.')
+        for domain in domains.keys():
+            valid = True
+            try:
+                if not dns.resolver.query(domain, 'MX'):
+                    valid = False
+            except:
+                valid = False
+
+            if not valid:
+                print(domain, 'invalid')
+                invalid.append(domain)
+                removed.append(domain)
+
+        for domain in invalid:
+            domains.pop(domain, None)
+
     print('Fetched {0} domains'.format(len(domains)))
+    if invalid:
+        print(' - {0} domain(s) invalid'.format(len(invalid)))
     print(' - {0} domain(s) added'.format(len(added)))
     print(' - {0} domain(s) removed'.format(len(removed)))
 
