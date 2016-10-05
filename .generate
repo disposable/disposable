@@ -68,9 +68,6 @@ def process_url(url, fmt, encoding='utf-8', timeout=3):
                 'WRN The discard.email list format has changed: {0}'.format(url))
             return
         lines = list(map(lambda line: line['domain'], raw['active']))
-        for l in lines:
-            if l in banlist:
-                print('drop', l)
 
     lines = [line.lower().strip(' .,;') for line in lines]
     lines = list(filter(lambda line: domain_regex.match(line), lines))
