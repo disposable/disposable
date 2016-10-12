@@ -18,7 +18,7 @@ domains = {}
 out_file = 'domains'
 supported_formats = list(sources.keys())
 
-skip = ['qq.com']
+skip = ['qq.com','sibmail.com']
 banlist = [
     'a45.in',
     'bund.us',
