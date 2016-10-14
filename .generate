@@ -5,133 +5,142 @@ import re
 import urllib.request
 import sys
 
-sources = {
-    'line': ['https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7',
-             'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
-             'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt'],
-    'json': ['https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'],
-    'discard.email': ['https://discard.email/about-getDomains=55bea3fee498cb80f4d3060b738a5936.htm']
-}
+class disposableHostGenerator():
+    sources = {
+        'line': [ 'https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7',
+                  'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
+                  'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt',
+                  'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt' ],
+        'file': [ 'blacklist.txt' ],
+        'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json' ],
+        'discard.email': [ 'https://discard.email/about-getDomains=55bea3fee498cb80f4d3060b738a5936.htm' ]
+    }
 
-domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
-domains = {}
-out_file = 'domains'
-supported_formats = list(sources.keys())
+    domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
+    skip = ['qq.com', 'sibmail.com']
 
-skip = ['qq.com','sibmail.com']
-banlist = [
-    'a45.in',
-    'bund.us',
-    'bundes-li.ga',
-    'cachedot.net',
-    'manifestgenerator.com',
-    'mvrht.com',
-    'nonspam.eu',
-    'nonspammer.de',
-    'spamstack.net',
-    'teleosaurs.xyz',
-    'webuser.in',
-    'you-spam.com',
-    're-gister.com',
-    'fake-box.com',
-    'trash-me.com',
-    'opentrash.com'
-]
+    def __init__(self, verbose = None, out_file = None):
+        self.domains = {}
+        self.old_domains = {}
+        self.verbose = verbose
+        self.supported_formats = list(self.sources.keys())
+        self.out_file = 'domains' if out_file is None else out_file
 
-def process_url(url, fmt, encoding='utf-8', timeout=3):
-    if fmt not in supported_formats:
-        return
+    def verbosePrint(self, msg):
+        if self.verbose:
+            print(msg)
 
-    data = ''
-    try:
-        data = urllib.request.urlopen(url, timeout=timeout).read() or ''
-    except Exception as err:
-        print('WRN Fetching URL {0} failed, see error: {1}'.format(url, err))
-        return
-
-    lines = []
-    if fmt == 'list':
-        lines = data.split()
-    elif fmt == 'json':
-        raw = json.loads(data.decode(encoding))
-        if not isinstance(raw, list):
-            print(
-                'WRN This URL does not contain a JSON array: {0}'.format(url))
+    def process_source(self, url, fmt, encoding='utf-8', timeout=3):
+        if fmt not in self.supported_formats:
             return
-        lines = list(filter(lambda line: line and isinstance(line, str), raw))
-    elif fmt == 'discard.email':
-        raw = json.loads(data.decode(encoding))
-        if not raw.get('active') or \
-           not isinstance(raw['active'], list) or \
-           not raw['active'][0].get('domain'):
-            print(
-                'WRN The discard.email list format has changed: {0}'.format(url))
-            return
-        lines = list(map(lambda line: line['domain'], raw['active']))
 
-    lines = [line.lower().strip(' .,;') for line in lines]
-    lines = list(filter(lambda line: domain_regex.match(line), lines))
+        lines = []
+        if fmt == 'file':
+            with open(url, 'rb') as f:
+                lines = [line.strip().decode('utf8') for line in f]
+        else:
+            data = ''
+            try:
+                data = urllib.request.urlopen(url, timeout=timeout).read() or ''
+            except Exception as err:
+                self.verbosePrint('WRN Fetching URL {0} failed, see error: {1}'.format(url, err))
+                return
 
-    global domains
-    for line in lines:
-        domains[line] = None
+        if fmt == 'list':
+            lines = data.split()
+        elif fmt == 'json':
+            raw = json.loads(data.decode(encoding))
+            if not isinstance(raw, list):
+                self.verbosePrint('WRN This URL does not contain a JSON array: {0}'.format(url))
+                return
+            lines = list(filter(lambda line: line and isinstance(line, str), raw))
+        elif fmt == 'discard.email':
+            raw = json.loads(data.decode(encoding))
+            if not raw.get('active') or \
+               not isinstance(raw['active'], list) or \
+               not raw['active'][0].get('domain'):
+                self.verbosePrint('WRN The discard.email list format has changed: {0}'.format(url))
+                return
+            lines = list(map(lambda line: line['domain'], raw['active']))
+
+        lines = [line.lower().strip(' .,;') for line in lines]
+        lines = list(filter(lambda line: self.domain_regex.match(line), lines))
+
+        for host in lines:
+            self.domains[host] = None
+
+        return True
+
+    def readFile(self):
+        # read and compare to current (old) domains file
+        self.old_domains = {}
+        with open(self.out_file + '.txt') as f:
+            for line in f:
+                self.old_domains[line.strip()] = None
+
+    def generate(self, dns_verify = None):
+        # build domains dict
+        for fmt in self.supported_formats:
+            for src in self.sources[fmt]:
+                self.process_source(src, fmt)
+
+        # add custom whitelist
+        for domain in self.skip:
+            self.domains.pop(domain, None)
+
+        # MX verify check
+        no_mx = []
+        if dns_verify:
+            import dns.resolver
+            self.verbosePrint('Check for domains without MX.')
+            for domain in self.domains.keys():
+                valid = False
+                try:
+                    if dns.resolver.query(domain, 'MX'):
+                        valid = True
+                except:
+                    pass
+
+                if not valid:
+                    self.verbosePrint('%s: without MX record' % (domain, ))
+                    no_mx.append(domain)
+
+            for domain in no_mx:
+                self.domains.pop(domain, None)
+
+        if self.verbose:
+            if not self.old_domains:
+                self.readFile()
+
+            added = list(
+                filter(lambda domain: domain not in self.old_domains, self.domains.keys()))
+            removed = list(
+                filter(lambda domain: domain not in self.domains, self.old_domains.keys()))
+
+            self.verbosePrint('Fetched {0} domains'.format(len(self.domains)))
+            if no_mx:
+                self.verbosePrint(' - {0} domain(s) have no MX'.format(len(no_mx)))
+            self.verbosePrint(' - {0} domain(s) added'.format(len(added)))
+            self.verbosePrint(' - {0} domain(s) removed'.format(len(removed)))
+
+            # stop if nothing has changed
+            if len(added) == len(removed) == 0:
+                return False
+
+        return True
+
+    def writeToFile(self):
+        # write new list to file(s)
+        domains = list(self.domains.keys())
+        domains.sort()
+        with open(self.out_file + '.txt', 'w') as ff:
+            ff.write('\n'.join(domains))
+
+        with open(self.out_file + '.json', 'w') as ff:
+            ff.write(json.dumps(domains))
 
 if __name__ == '__main__':
-    # build domains dict
-    for fmt in supported_formats:
-        for src in sources[fmt]:
-            process_url(src, fmt)
-    # add custom black and white list
-    for domain in banlist:
-        domains[domain] = None
-    for domain in skip:
-        domains.pop(domain, None)
-
-    # read and compare to current (old) domains file
-    old_domains = {}
-    with open(out_file + '.txt') as ff:
-        for line in ff.read().split():
-            old_domains[line] = None
-
-    added = list(
-        filter(lambda domain: domain not in old_domains, domains.keys()))
-    removed = list(
-        filter(lambda domain: domain not in domains, old_domains.keys()))
-
-    invalid = []
-    if '--dns-verify' in sys.argv:
-        import dns.resolver
-        print('Check for domains without MX.')
-        for domain in domains.keys():
-            valid = True
-            try:
-                if not dns.resolver.query(domain, 'MX'):
-                    valid = False
-            except:
-                valid = False
-
-            if not valid:
-                print(domain, 'invalid')
-                invalid.append(domain)
-                removed.append(domain)
-
-        for domain in invalid:
-            domains.pop(domain, None)
-
-    print('Fetched {0} domains'.format(len(domains)))
-    if invalid:
-        print(' - {0} domain(s) invalid'.format(len(invalid)))
-    print(' - {0} domain(s) added'.format(len(added)))
-    print(' - {0} domain(s) removed'.format(len(removed)))
-
-    # stop if nothing has changed
-    if len(added) == len(removed) == 0:
-        exit()
-
-    # write new list to file(s)
-    domains = list(domains.keys())
-    domains.sort()
-    with open(out_file + '.txt', 'w') as ff:
-        ff.write('\n'.join(domains))
-    with open(out_file + '.json', 'w') as ff:
-        ff.write(json.dumps(domains))
+    dhg = disposableHostGenerator(verbose = True)
+    dns_verify = True if '--dns-verify' in sys.argv else False
+    dhg.generate(dns_verify = dns_verify)
+    dhg.writeToFile()

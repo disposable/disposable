@@ -85,9 +85,11 @@ amiri.net
 amiriindustries.com
 anappthat.com
 ano-mail.net
+anon.leemail.me
 anonbox.net
 anonymail.dk
 anonymbox.com
+anonymize.com
 anotherdomaincyka.tk
 antichef.com
 antichef.net
@@ -768,6 +770,11 @@ myspamless.com
 mytemp.email
 mytempemail.com
 mytrashmail.com
+napalm51.cf
+napalm51.ga
+napalm51.gq
+napalm51.ml
+napalm51.tk
 neomailbox.com
 nepwk.com
 nervmich.net
