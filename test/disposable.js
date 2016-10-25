@@ -17,7 +17,7 @@ describe('disposable', function() {
   })
 
   describe('async', function() {
-    it('should validate domain - legit', function(done) {
+    it('should validate domain: legit', function(done) {
       disposable.validate('gmail.com', function(err, result) {
         if (err) return done(err)
         assert.equal(result, true)
@@ -25,7 +25,7 @@ describe('disposable', function() {
       })
     })
 
-    it('should validate domain - disposable', function(done) {
+    it('should validate domain: disposable', function(done) {
       disposable.validate('zoemail.com', function(err, result) {
         if (err) return done(err)
         assert.equal(result, false)
