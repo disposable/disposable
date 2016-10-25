@@ -43,6 +43,9 @@ var disposable = require('disposable-email');
 disposable.validate('gmail.com');
 // true
 
+disposable.validate('foo@gmail.com');
+// true
+
 disposable.validate('gmail.com', console.log);
 // undefined
 // null true
