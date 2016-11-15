@@ -9,10 +9,12 @@ class disposableHostGenerator():
     sources = {
         'line': [ 'https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7',
                   'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
-                  'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt',
-                  'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt' ],
+                  'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt'
+                ],
         'file': [ 'blacklist.txt' ],
-        'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json' ],
+        'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
+                  'https://api.temp-mail.ru/request/domains/format/json/' ],
+        'temp-mail': [ 'https://temp-mail.org/en/option/change/' ],
         'discard.email': [ 'https://discard.email/about-getDomains=55bea3fee498cb80f4d3060b738a5936.htm' ]
     }
 
@@ -41,19 +43,30 @@ class disposableHostGenerator():
         else:
             data = ''
             try:
-                data = urllib.request.urlopen(url, timeout=timeout).read() or ''
+                req = urllib.request.Request(
+                    url,
+                    data=None,
+                    headers={
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'
+                    }
+                )
+
+                data = urllib.request.urlopen(req, timeout=timeout).read() or ''
             except Exception as err:
                 self.verbosePrint('WRN Fetching URL {0} failed, see error: {1}'.format(url, err))
                 return
 
         if fmt == 'list':
-            lines = data.split()
+            lines = data.splitlines()
         elif fmt == 'json':
             raw = json.loads(data.decode(encoding))
             if not isinstance(raw, list):
                 self.verbosePrint('WRN This URL does not contain a JSON array: {0}'.format(url))
                 return
             lines = list(filter(lambda line: line and isinstance(line, str), raw))
+        elif fmt == 'temp-mail':
+            dom_re = re.compile("""<option value="@[^"]+">@([^<]+)<\/option>""", re.I)
+            lines = dom_re.findall(data.decode(encoding))
         elif fmt == 'discard.email':
             raw = json.loads(data.decode(encoding))
             if not raw.get('active') or \
