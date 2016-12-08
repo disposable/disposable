@@ -154,7 +154,10 @@ class disposableHostGenerator():
             ff.write(json.dumps(domains))
 
 if __name__ == '__main__':
+    exit_status = 1
     dhg = disposableHostGenerator(verbose = True)
     dns_verify = True if '--dns-verify' in sys.argv else False
-    dhg.generate(dns_verify = dns_verify)
+    if dhg.generate(dns_verify = dns_verify):
+        exit_status = 0
     dhg.writeToFile()
+    sys.exit(exit_status)
