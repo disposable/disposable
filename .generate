@@ -77,7 +77,7 @@ class disposableHostGenerator():
                 return
             lines = list(map(lambda line: line['domain'], raw['active']))
 
-        lines = [line.lower().strip(' .,;') for line in lines]
+        lines = [line.lower().strip(' .,;@') for line in lines]
         lines = list(filter(lambda line: self.domain_regex.match(line), lines))
 
         for host in lines:
