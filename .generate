@@ -4,27 +4,32 @@ import json
 import re
 import urllib.request
 import sys
+import hashlib
 
 class disposableHostGenerator():
     sources = {
         'line': [ 'https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7',
                   'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
                   'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt',
-                  'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt'
-                ],
+                  'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt' ],
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
                   'https://api.temp-mail.ru/request/domains/format/json/' ],
         'temp-mail': [ 'https://temp-mail.org/en/option/change/' ],
+        'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'discard.email': [ 'https://discard.email/about-getDomains=55bea3fee498cb80f4d3060b738a5936.htm' ]
     }
 
     domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
+    sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
     skip = ['qq.com', 'sibmail.com']
 
     def __init__(self, verbose = None, out_file = None):
         self.domains = {}
+        self.sha1 = {}
         self.old_domains = {}
+        self.old_sha1 = {}
+
         self.verbose = verbose
         self.supported_formats = list(self.sources.keys())
         self.out_file = 'domains' if out_file is None else out_file
@@ -76,12 +81,22 @@ class disposableHostGenerator():
                 self.verbosePrint('WRN The discard.email list format has changed: {0}'.format(url))
                 return
             lines = list(map(lambda line: line['domain'], raw['active']))
+        elif fmt == 'sha1':
+            lines = data.splitlines()
+            lines = [line.decode('ascii').lower() for line in lines]
+            for sha1_str in lines:
+                if not sha1_str or not self.sha1_regex.match(sha1_str):
+                    continue
+
+                self.sha1[sha1_str.lower()] = None
+            return True
 
         lines = [line.lower().strip(' .,;@') for line in lines]
         lines = list(filter(lambda line: self.domain_regex.match(line), lines))
 
         for host in lines:
             self.domains[host] = None
+            self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
 
         return True
 
@@ -92,6 +107,11 @@ class disposableHostGenerator():
             for line in f:
                 self.old_domains[line.strip()] = None
 
+        self.old_sha1 = {}
+        with open(self.out_file + '_sha1.txt') as f:
+            for line in f:
+                self.old_sha1[line.strip()] = None
+
     def generate(self, dns_verify = None):
         # build domains dict
         for fmt in self.supported_formats:
@@ -101,6 +121,7 @@ class disposableHostGenerator():
         # add custom whitelist
         for domain in self.skip:
             self.domains.pop(domain, None)
+            self.sha1.pop(hashlib.sha1(domain.encode('idna')).hexdigest(), None)
 
         # MX verify check
         no_mx = []
@@ -121,6 +142,7 @@ class disposableHostGenerator():
 
             for domain in no_mx:
                 self.domains.pop(domain, None)
+                self.sha1.pop(hashlib.sha1(domain).hexdigest(), None)
 
         if self.verbose:
             if not self.old_domains:
@@ -131,14 +153,20 @@ class disposableHostGenerator():
             removed = list(
                 filter(lambda domain: domain not in self.domains, self.old_domains.keys()))
 
-            self.verbosePrint('Fetched {0} domains'.format(len(self.domains)))
+            added_sha1 = list(
+                filter(lambda sha_str: sha_str not in self.old_sha1, self.sha1.keys()))
+            removed_sha1 = list(
+                filter(lambda sha_str: sha_str not in self.sha1, self.old_sha1.keys()))
+
+            self.verbosePrint('Fetched {0} domains and {1} hashes'.format(len(self.domains), len(self.sha1)))
             if no_mx:
                 self.verbosePrint(' - {0} domain(s) have no MX'.format(len(no_mx)))
             self.verbosePrint(' - {0} domain(s) added'.format(len(added)))
             self.verbosePrint(' - {0} domain(s) removed'.format(len(removed)))
-
+            self.verbosePrint(' - {0} hash(s) added'.format(len(added_sha1)))
+            self.verbosePrint(' - {0} hash(s) removed'.format(len(removed_sha1)))
             # stop if nothing has changed
-            if len(added) == len(removed) == 0:
+            if len(added) == len(removed) == len(added_sha1) == len(removed_sha1) == 0:
                 return False
 
         return True
@@ -152,6 +180,15 @@ class disposableHostGenerator():
 
         with open(self.out_file + '.json', 'w') as ff:
             ff.write(json.dumps(domains))
+
+        # write new list to file(s)
+        domains_sha1 = list(self.sha1.keys())
+        domains_sha1.sort()
+        with open(self.out_file + '_sha1.txt', 'w') as ff:
+            ff.write('\n'.join(domains_sha1))
+
+        with open(self.out_file + '_sha1.json', 'w') as ff:
+            ff.write(json.dumps(domains_sha1))
 
 if __name__ == '__main__':
     exit_status = 1
