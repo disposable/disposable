@@ -163,8 +163,8 @@ class disposableHostGenerator():
                 self.verbosePrint(' - {0} domain(s) have no MX'.format(len(no_mx)))
             self.verbosePrint(' - {0} domain(s) added'.format(len(added)))
             self.verbosePrint(' - {0} domain(s) removed'.format(len(removed)))
-            self.verbosePrint(' - {0} hash(s) added'.format(len(added_sha1)))
-            self.verbosePrint(' - {0} hash(s) removed'.format(len(removed_sha1)))
+            self.verbosePrint(' - {0} hash(es) added'.format(len(added_sha1)))
+            self.verbosePrint(' - {0} hash(es) removed'.format(len(removed_sha1)))
             # stop if nothing has changed
             if len(added) == len(removed) == len(added_sha1) == len(removed_sha1) == 0:
                 return False
