@@ -63,8 +63,7 @@ class disposableHostGenerator():
                 return
 
         if fmt == 'list':
-            lines = data.splitlines()
-            lines = [line.decode(encoding).lower() for line in lines]
+            lines = [line.decode(encoding) for line in data.splitlines()]
         elif fmt == 'json':
             raw = json.loads(data.decode(encoding))
             if not isinstance(raw, list):
