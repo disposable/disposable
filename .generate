@@ -15,9 +15,9 @@ class disposableHostGenerator():
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
                   'https://api.temp-mail.ru/request/domains/format/json/' ],
-        'temp-mail': [ 'https://temp-mail.org/en/option/change/' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
-        'discard.email': [ 'https://discard.email/about-getDomains=55bea3fee498cb80f4d3060b738a5936.htm' ]
+        'discard.email': [ 'https://discard.email/about-getDomains=55bea3fee498cb80f4d3060b738a5936.htm' ],
+        'option-select-box': [ 'https://temp-mail.org/en/option/change/', 'https://spamwc.de/' ]
     }
 
     domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
@@ -70,8 +70,8 @@ class disposableHostGenerator():
                 self.verbosePrint('WRN This URL does not contain a JSON array: {0}'.format(url))
                 return
             lines = list(filter(lambda line: line and isinstance(line, str), raw))
-        elif fmt == 'temp-mail':
-            dom_re = re.compile("""<option value="@[^"]+">@([^<]+)<\/option>""", re.I)
+        elif fmt == 'option-select-box':
+            dom_re = re.compile("""<option value="@?[^"]+">@?([a-z0-9\-\.]+\.[a-z0-9\-\.]+)<\/option>""", re.I)
             lines = dom_re.findall(data.decode(encoding))
         elif fmt == 'discard.email':
             raw = json.loads(data.decode(encoding))
