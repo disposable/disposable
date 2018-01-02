@@ -5,6 +5,7 @@ import re
 import urllib.request
 import sys
 import hashlib
+import html
 
 class disposableHostGenerator():
     sources = {
@@ -16,7 +17,7 @@ class disposableHostGenerator():
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
                   'https://api.temp-mail.ru/request/domains/format/json/' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
-        'discard.email': [ 'https://discard.email/about-getDomains=55bea3fee498cb80f4d3060b738a5936.htm' ],
+        'tempr.email': [ 'https://tempr.email' ],
         'option-select-box': [ 'https://temp-mail.org/en/option/change/', 'https://spamwc.de/' ]
     }
 
@@ -73,14 +74,10 @@ class disposableHostGenerator():
         elif fmt == 'option-select-box':
             dom_re = re.compile("""<option value="@?[^"]+">@?([a-z0-9\-\.]+\.[a-z0-9\-\.]+)<\/option>""", re.I)
             lines = dom_re.findall(data.decode(encoding))
-        elif fmt == 'discard.email':
-            raw = json.loads(data.decode(encoding))
-            if not raw.get('active') or \
-               not isinstance(raw['active'], list) or \
-               not raw['active'][0].get('domain'):
-                self.verbosePrint('WRN The discard.email list format has changed: {0}'.format(url))
-                return
-            lines = list(map(lambda line: line['domain'], raw['active']))
+        elif fmt == 'tempr.email':
+            dom_re = re.compile("""<option value="[^"]+">@?([\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)
+            opts = dom_re.findall(data.decode(encoding))
+            lines = list(map(lambda opt: html.unescape(opt[0]), opts))
         elif fmt == 'sha1':
             lines = data.splitlines()
             lines = [line.decode('ascii').lower() for line in lines]
@@ -116,7 +113,11 @@ class disposableHostGenerator():
         # build domains dict
         for fmt in self.supported_formats:
             for src in self.sources[fmt]:
-                self.process_source(src, fmt)
+                try:
+                    self.process_source(src, fmt)
+                except Exception as err:
+                    self.verbosePrint((src, fmt, err))
+                    raise err
 
         # add custom whitelist
         for domain in self.skip:
