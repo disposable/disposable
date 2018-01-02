@@ -15,14 +15,18 @@ class disposableHostGenerator():
                   'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt' ],
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
-                  'https://api.temp-mail.ru/request/domains/format/json/' ],
+                  'https://api.temp-mail.ru/request/domains/format/json/'],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
-        'tempr.email': [ 'https://tempr.email' ],
+        'html': [ 'https://tempr.email', 'https://emailfake.com' ],
         'option-select-box': [ 'https://temp-mail.org/en/option/change/', 'https://spamwc.de/' ]
     }
 
     domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
+    html_re = {
+        'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
+        'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z\d-]{1,128})""", re.I)
+    }
     skip = ['qq.com', 'sibmail.com']
 
     def __init__(self, verbose = None, out_file = None):
@@ -74,8 +78,13 @@ class disposableHostGenerator():
         elif fmt == 'option-select-box':
             dom_re = re.compile("""<option value="@?[^"]+">@?([a-z0-9\-\.]+\.[a-z0-9\-\.]+)<\/option>""", re.I)
             lines = dom_re.findall(data.decode(encoding))
-        elif fmt == 'tempr.email':
-            dom_re = re.compile("""<option value="[^"]+">@?([\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)
+        elif fmt == 'html':
+            dom_re = self.html_re['generic']
+            for d in self.html_re.keys():
+                if d != 'generic' and d in url:
+                    dom_re = self.html_re[d]
+                    break
+
             opts = dom_re.findall(data.decode(encoding))
             lines = list(map(lambda opt: html.unescape(opt[0]), opts))
         elif fmt == 'sha1':
