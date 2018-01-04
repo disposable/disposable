@@ -27,7 +27,7 @@ class disposableHostGenerator():
         'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
         'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z\d-]{1,128})""", re.I)
     }
-    skip = ['qq.com', 'sibmail.com']
+    skip = ['qq.com', 'sibmail.com', '163.com']
 
     def __init__(self, verbose = None, out_file = None):
         self.domains = {}
