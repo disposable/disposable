@@ -34,6 +34,7 @@ class disposableHostGenerator():
         self.sha1 = {}
         self.old_domains = {}
         self.old_sha1 = {}
+        self.source_map = {}
 
         self.verbose = verbose
         self.supported_formats = list(self.sources.keys())
@@ -100,6 +101,7 @@ class disposableHostGenerator():
         lines = [line.lower().strip(' .,;@') for line in lines]
         lines = list(filter(lambda line: self.domain_regex.match(line), lines))
 
+        self.source_map[url] = lines
         for host in lines:
             self.domains[host] = None
             self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
@@ -118,7 +120,7 @@ class disposableHostGenerator():
             for line in f:
                 self.old_sha1[line.strip()] = None
 
-    def generate(self, dns_verify = None):
+    def generate(self, dns_verify = None, source_map = None):
         # build domains dict
         for fmt in self.supported_formats:
             for src in self.sources[fmt]:
@@ -181,12 +183,17 @@ class disposableHostGenerator():
 
         return True
 
-    def writeToFile(self):
+    def writeToFile(self, source_map = None):
         # write new list to file(s)
         domains = list(self.domains.keys())
         domains.sort()
         with open(self.out_file + '.txt', 'w') as ff:
             ff.write('\n'.join(domains))
+
+        if source_map:
+            with open(self.out_file + '_source_map.txt', 'w') as ff:
+                for (src_url, domains) in self.source_map.items():
+                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(domains))
 
         with open(self.out_file + '.json', 'w') as ff:
             ff.write(json.dumps(domains))
@@ -204,7 +211,8 @@ if __name__ == '__main__':
     exit_status = 1
     dhg = disposableHostGenerator(verbose = True)
     dns_verify = True if '--dns-verify' in sys.argv else False
+    source_map = True if '--source-map' in sys.argv else False
     if dhg.generate(dns_verify = dns_verify):
         exit_status = 0
-    dhg.writeToFile()
+    dhg.writeToFile(source_map = source_map)
     sys.exit(exit_status)
