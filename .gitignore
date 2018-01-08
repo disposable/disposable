@@ -303,3 +303,9 @@ target/
 # virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 
+domains.json
+domains.txt
+domains_sha1.json
+domains_sha1.txt
+domains_source_map.txt
+generate.py

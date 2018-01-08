@@ -13,20 +13,20 @@ Use it to validate email addresses on sign up, or just to see how many real emai
 
 * list
 
-A [file](https://raw.githubusercontent.com/andreis/disposable/master/domains.txt)
+A [file](https://raw.githubusercontent.com/andreis/disposable-email-domains/master/domains.txt)
 containing a sorted list of domains, one per line.
 
 ```
-curl https://raw.githubusercontent.com/andreis/disposable/master/domains.txt
+curl https://raw.githubusercontent.com/andreis/disposable-email-domains/master/domains.txt
 ```
 
 * JSON array
 
-A [file](https://raw.githubusercontent.com/andreis/disposable/master/domains.json)
+A [file](https://raw.githubusercontent.com/andreis/disposable-email-domains/master/domains.json)
 containing a sorted array of domains, in JSON format.
 
 ```
-curl https://raw.githubusercontent.com/andreis/disposable/master/domains.json
+curl https://raw.githubusercontent.com/andreis/disposable-email-domains/master/domains.json
 ```
 
 * javascript
@@ -67,9 +67,11 @@ To update the list of domains run `.generate` (requires `python3`), and optional
 
 ```lang=bash
 $ ./.generate
-Fetched 1110 domains
- - 312 domain(s) added
- - 110 domain(s) removed
+Fetched 5196 domains and 6593 hashes
+ - 2000 domain(s) added
+ - 75 domain(s) removed
+ - 2010 hash(es) added
+ - 76 hash(es) removed
 ```
 
 ### Credits
@@ -77,11 +79,12 @@ Fetched 1110 domains
 -	https://github.com/adamloving
 -	https://github.com/michenriksen
 -	https://github.com/ivolo
+-   https://github.com/smeinecke
 
 ### CDN
 
-Production: https://rawcdn.githack.com/andreis/disposable/master/domains.json
+Production: https://rawcdn.githack.com/andreis/disposable-email-domains/master/domains.json
 
-Development: https://raw.githack.com/andreis/disposable/master/domains.json
+Development: https://raw.githack.com/andreis/disposable-email-domains/master/domains.json
 
 by: https://raw.githack.com/
