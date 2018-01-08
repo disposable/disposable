@@ -80,6 +80,7 @@ Fetched 5196 domains and 6593 hashes
 -	https://github.com/michenriksen
 -	https://github.com/ivolo
 -   https://github.com/smeinecke
+-   https://github.com/GeroldSetz
 
 ### CDN
 
