@@ -210,8 +210,8 @@ class disposableHostGenerator():
 
         if source_map:
             with open(self.out_file + '_source_map.txt', 'w') as ff:
-                for (src_url, domains) in self.source_map.items():
-                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(domains))
+                for (src_url, source_map_domains) in self.source_map.items():
+                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(source_map_domains))
 
         with open(self.out_file + '.json', 'w') as ff:
             ff.write(json.dumps(domains))
