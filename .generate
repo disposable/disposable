@@ -28,7 +28,7 @@ class disposableHostGenerator():
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
     html_re = {
         'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
-        'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z\d-]{1,128})""", re.I)
+        'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I)
     }
 
     def __init__(self, verbose = None, out_file = None):
@@ -87,13 +87,13 @@ class disposableHostGenerator():
             lines = dom_re.findall(data.decode(encoding))
         elif fmt == 'html':
             dom_re = self.html_re['generic']
-            for d in self.html_re.keys():
-                if d != 'generic' and d in url:
-                    dom_re = self.html_re[d]
+            for (re_domain, re_item) in self.html_re.items():
+                if re_domain != 'generic' and re_domain in url:
+                    dom_re = re_item
                     break
 
             opts = dom_re.findall(data.decode(encoding))
-            lines = list(map(lambda opt: html.unescape(opt[0]), opts))
+            lines = list(map(lambda opt: html.unescape(opt[0]) if type(opt) is tuple else opt, opts))
         elif fmt == 'sha1':
             lines = data.splitlines()
             lines = [line.decode('ascii').lower() for line in lines]
@@ -112,6 +112,10 @@ class disposableHostGenerator():
                 if not host in self.skip:
                     self.skip.append(host)
             return True
+
+        if not lines:
+            self.verbosePrint('WRN No results for this source: {0}'.format(url))
+            return
 
         self.source_map[url] = lines
         for host in lines:
