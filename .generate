@@ -6,7 +6,6 @@ import urllib.request
 import sys
 import hashlib
 import html
-import collections
 
 class disposableHostGenerator():
     sources = {
@@ -32,11 +31,13 @@ class disposableHostGenerator():
     }
 
     def __init__(self, verbose = None, out_file = None):
+        self.no_mx = {}
         self.domains = {}
         self.sha1 = {}
         self.old_domains = {}
         self.old_sha1 = {}
-        self.source_map = collections.OrderedDict()
+        self.legacy_domains = {}
+        self.source_map = {}
         self.skip = []
 
         self.verbose = verbose
@@ -121,11 +122,13 @@ class disposableHostGenerator():
         for host in lines:
             self.domains[host] = None
             self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
+            self.legacy_domains[host] = None
 
         return True
 
-    def readFile(self):
-        # read and compare to current (old) domains file
+    """ read and compare to current (old) domains file
+    """
+    def readFiles(self):
         self.old_domains = {}
         try:
             with open(self.out_file + '.txt') as f:
@@ -133,7 +136,6 @@ class disposableHostGenerator():
                     self.old_domains[line.strip()] = None
         except IOError:
             pass
-
 
         self.old_sha1 = {}
         try:
@@ -143,6 +145,16 @@ class disposableHostGenerator():
         except IOError:
             pass
 
+        self.legacy_domains = {}
+        try:
+            with open(self.out_file + '_legacy.txt') as f:
+                for line in f:
+                    self.legacy_domains[line.strip()] = None
+        except IOError:
+            pass
+
+    """ merge all lists
+    """
     def generate(self, dns_verify = None, source_map = None):
         # build domains dict
         for fmt in self.supported_formats:
@@ -159,29 +171,25 @@ class disposableHostGenerator():
             self.sha1.pop(hashlib.sha1(domain.encode('idna')).hexdigest(), None)
 
         # MX verify check
-        no_mx = []
+        self.no_mx = []
         if dns_verify:
             import dns.resolver
-            self.verbosePrint('Check for domains without MX.')
             for domain in self.domains.keys():
                 valid = False
                 try:
                     if dns.resolver.query(domain, 'MX'):
                         valid = True
+                except KeyboardInterrupt:
+                    raise
                 except:
                     pass
 
                 if not valid:
-                    self.verbosePrint('%s: without MX record' % (domain, ))
-                    no_mx.append(domain)
-
-            for domain in no_mx:
-                self.domains.pop(domain, None)
-                self.sha1.pop(hashlib.sha1(domain).hexdigest(), None)
+                    self.no_mx.append(domain)
 
         if self.verbose:
             if not self.old_domains:
-                self.readFile()
+                self.readFiles()
 
             added = list(
                 filter(lambda domain: domain not in self.old_domains, self.domains.keys()))
@@ -194,8 +202,8 @@ class disposableHostGenerator():
                 filter(lambda sha_str: sha_str not in self.sha1, self.old_sha1.keys()))
 
             self.verbosePrint('Fetched {0} domains and {1} hashes'.format(len(self.domains), len(self.sha1)))
-            if no_mx:
-                self.verbosePrint(' - {0} domain(s) have no MX'.format(len(no_mx)))
+            if dns_verify:
+                self.verbosePrint(' - {0} domain(s) have no MX'.format(len(self.no_mx)))
             self.verbosePrint(' - {0} domain(s) added'.format(len(added)))
             self.verbosePrint(' - {0} domain(s) removed'.format(len(removed)))
             self.verbosePrint(' - {0} hash(es) added'.format(len(added_sha1)))
@@ -213,16 +221,29 @@ class disposableHostGenerator():
         with open(self.out_file + '.txt', 'w') as ff:
             ff.write('\n'.join(domains))
 
-        if source_map:
-            with open(self.out_file + '_source_map.txt', 'w') as ff:
-                for (src_url, source_map_domains) in self.source_map.items():
-                    source_map_domains.sort()
-                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(source_map_domains) + "\n")
-
         with open(self.out_file + '.json', 'w') as ff:
             ff.write(json.dumps(domains))
 
-        # write new list to file(s)
+        if source_map:
+            with open(self.out_file + '_source_map.txt', 'w') as ff:
+                for (src_url, source_map_domains) in sorted(self.source_map.items()):
+                    source_map_domains.sort()
+                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(source_map_domains) + "\n")
+
+        if self.no_mx:
+            domains_with_mx = self.domains
+            for domain in self.no_mx:
+                domains_with_mx.pop(domain, None)
+
+            domains = list(domains_with_mx.keys())
+            domains.sort()
+            with open(self.out_file + '_mx.txt', 'w') as ff:
+                ff.write('\n'.join(domains))
+
+            with open(self.out_file + '_mx.json', 'w') as ff:
+                ff.write(json.dumps(domains))
+
+        # write new hash list to file(s)
         domains_sha1 = list(self.sha1.keys())
         domains_sha1.sort()
         with open(self.out_file + '_sha1.txt', 'w') as ff:
