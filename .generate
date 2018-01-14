@@ -18,7 +18,7 @@ class disposableHostGenerator():
                   'https://api.temp-mail.ru/request/domains/format/json/',
                   'https://robot-mail.com/api/v1/domains' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
-        'html': [ 'https://tempr.email', 'https://emailfake.com' ],
+        'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/' ],
         'option-select-box': [ 'https://temp-mail.org/en/option/change/', 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
         'whitelist_file': [ 'whitelist.txt' ]
