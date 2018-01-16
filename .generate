@@ -24,6 +24,8 @@ class disposableHostGenerator():
         'whitelist_file': [ 'whitelist.txt' ]
     }
 
+    scrape_sources = [ 'https://emailfake.com' ]
+
     domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
     html_re = {
@@ -31,7 +33,7 @@ class disposableHostGenerator():
         'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I)
     }
 
-    def __init__(self, verbose = None, out_file = None):
+    def __init__(self, options = None, out_file = None):
         self.no_mx = {}
         self.domains = {}
         self.sha1 = {}
@@ -40,18 +42,25 @@ class disposableHostGenerator():
         self.legacy_domains = {}
         self.source_map = {}
         self.skip = []
+        self.scrape = []
 
-        self.verbose = verbose
+        if not options:
+            options = {}
+
+        self.options = options
         self.supported_formats = list(self.sources.keys())
         self.out_file = 'domains' if out_file is None else out_file
 
     def verbosePrint(self, msg):
-        if self.verbose:
+        if self.options.get('verbose'):
             print(msg)
 
-    def process_source(self, url, fmt, encoding='utf-8', timeout=3):
+    def process_source(self, url, fmt, encoding='utf-8', timeout=3, retry=None):
         if fmt not in self.supported_formats:
             return
+        retry = 0 if retry is None else retry
+        if retry > 9:
+            self.verbosePrint("Retry {0} for {1}".format(retry, url))
 
         lines = []
         if fmt in ('file', 'whitelist_file'):
@@ -120,10 +129,19 @@ class disposableHostGenerator():
             return
 
         self.source_map[url] = lines
+        need_scrape = False
+
         for host in lines:
             self.domains[host] = None
             self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
             self.legacy_domains[host] = None
+
+            if url in self.scrape_sources and not host in self.scrape:
+                self.scrape.append(host)
+                need_scrape = True
+
+        if need_scrape:
+            return self.process_source(url, fmt, encoding, timeout, retry+1)
 
         return True
 
@@ -156,10 +174,14 @@ class disposableHostGenerator():
 
     """ merge all lists
     """
-    def generate(self, dns_verify = None, source_map = None):
+    def generate(self):
         # build domains dict
         for fmt in self.supported_formats:
             for src in self.sources[fmt]:
+                if self.options.get('src_filter') is not None and \
+                   not src == self.options.get('src_filter'):
+                    continue
+
                 try:
                     self.process_source(src, fmt)
                 except Exception as err:
@@ -173,7 +195,7 @@ class disposableHostGenerator():
 
         # MX verify check
         self.no_mx = []
-        if dns_verify:
+        if self.options.get('dns_verify'):
             import dns.resolver
             for domain in self.domains.keys():
                 valid = False
@@ -188,7 +210,7 @@ class disposableHostGenerator():
                 if not valid:
                     self.no_mx.append(domain)
 
-        if self.verbose:
+        if self.options.get('verbose'):
             if not self.old_domains:
                 self.readFiles()
 
@@ -203,7 +225,7 @@ class disposableHostGenerator():
                 filter(lambda sha_str: sha_str not in self.sha1, self.old_sha1.keys()))
 
             self.verbosePrint('Fetched {0} domains and {1} hashes'.format(len(self.domains), len(self.sha1)))
-            if dns_verify:
+            if self.options.get('dns_verify'):
                 self.verbosePrint(' - {0} domain(s) have no MX'.format(len(self.no_mx)))
             self.verbosePrint(' - {0} domain(s) added'.format(len(added)))
             self.verbosePrint(' - {0} domain(s) removed'.format(len(removed)))
@@ -213,9 +235,12 @@ class disposableHostGenerator():
             if len(added) == len(removed) == len(added_sha1) == len(removed_sha1) == 0:
                 return False
 
+            if self.options.get('src_filter'):
+                self.verbosePrint(self.domains.keys())
+
         return True
 
-    def writeToFile(self, source_map = None):
+    def writeToFile(self):
         # write new list to file(s)
         domains = list(self.domains.keys())
         domains.sort()
@@ -225,7 +250,7 @@ class disposableHostGenerator():
         with open(self.out_file + '.json', 'w') as ff:
             ff.write(json.dumps(domains))
 
-        if source_map:
+        if self.options.get('source_map'):
             with open(self.out_file + '_source_map.txt', 'w') as ff:
                 for (src_url, source_map_domains) in sorted(self.source_map.items()):
                     source_map_domains.sort()
@@ -255,10 +280,18 @@ class disposableHostGenerator():
 
 if __name__ == '__main__':
     exit_status = 1
-    dhg = disposableHostGenerator(verbose = True)
-    dns_verify = True if '--dns-verify' in sys.argv else False
-    source_map = True if '--source-map' in sys.argv else False
-    if dhg.generate(dns_verify = dns_verify):
+    options = {
+        'dns_verify': True if '--dns-verify' in sys.argv else False,
+        'source_map': True if '--source-map' in sys.argv else False,
+        'src_filter': None,
+        'verbose': False if '--quiet' in sys.argv else True
+    }
+
+    if '--src' in sys.argv:
+        options['src_filter'] = sys.argv[sys.argv.index('--src')+1]
+
+    dhg = disposableHostGenerator(options)
+    if dhg.generate() or options.get('src_filter') is not None:
         exit_status = 0
-    dhg.writeToFile(source_map = source_map)
+        dhg.writeToFile()
     sys.exit(exit_status)
