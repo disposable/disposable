@@ -15,7 +15,6 @@ class disposableHostGenerator():
                   'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt' ],
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
-                  'https://api.temp-mail.ru/request/domains/format/json/',
                   'https://robot-mail.com/api/v1/domains' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/' ],
@@ -30,6 +29,7 @@ class disposableHostGenerator():
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
     html_re = {
         'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
+        'tempr.email': re.compile("""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
         'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I)
     }
 
