@@ -25,3 +25,6 @@ govnomail.xyz
 anonmail.top
 dma.in-ulm.de
 solowtech.com
+mailox.biz
+freeinbox.email
+nospam.today
