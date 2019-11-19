@@ -6,7 +6,6 @@ import urllib.request
 import sys
 import hashlib
 import html
-import time
 
 class disposableHostGenerator():
     sources = {
@@ -58,6 +57,8 @@ class disposableHostGenerator():
         self.options = options
         self.supported_formats = list(self.sources.keys())
         self.out_file = 'domains' if out_file is None else out_file
+
+        self.scrape_count = 0
 
     def verbosePrint(self, msg):
         if self.options.get('verbose'):
@@ -147,14 +148,18 @@ class disposableHostGenerator():
             self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
             self.legacy_domains[host] = None
 
-            if url in self.scrape_sources and not host in self.scrape:
-                self.scrape.append(host)
+            if url in self.scrape_sources and self.scrape_count < 5:
+                if not host in self.scrape:
+                    self.scrape.append(host)
+                else:
+                    self.scrape_count += 1
                 need_scrape = True
 
+
         if need_scrape:
-            time.sleep(1)
             return self.process_source(url, fmt, encoding, timeout, retry+1)
 
+        self.scrape_count = 0
         return True
 
     """ read and compare to current (old) domains file
@@ -184,6 +189,25 @@ class disposableHostGenerator():
         except IOError:
             pass
 
+    """ check if MX is resolved for given domain
+    """
+    @staticmethod
+    def fetchMX(domain):
+        import dns.resolver
+        resolver = dns.resolver.Resolver()
+        resolver.lifetime = resolver.timeout = 20.0
+
+        valid = False
+        try:
+            if resolver.query(domain, 'MX'):
+                valid = True
+        except KeyboardInterrupt:
+            raise
+        except:
+            pass
+
+        return (domain, valid)
+
     """ merge all lists
     """
     def generate(self):
@@ -208,19 +232,13 @@ class disposableHostGenerator():
         # MX verify check
         self.no_mx = []
         if self.options.get('dns_verify'):
-            import dns.resolver
-            for domain in self.domains.keys():
-                valid = False
-                try:
-                    if dns.resolver.query(domain, 'MX'):
-                        valid = True
-                except KeyboardInterrupt:
-                    raise
-                except:
-                    pass
-
-                if not valid:
-                    self.no_mx.append(domain)
+            import concurrent.futures
+            with concurrent.futures.ThreadPoolExecutor(max_workers=80) as executor:
+                futures = [ executor.submit(disposableHostGenerator.fetchMX, domain) for domain in self.domains.keys() ]
+                for future in concurrent.futures.as_completed(futures):
+                    (domain, valid) = future.result()
+                    if not valid:
+                        self.no_mx.append(domain)
 
         if self.options.get('verbose'):
             if not self.old_domains:
