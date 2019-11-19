@@ -6,6 +6,7 @@ import urllib.request
 import sys
 import hashlib
 import html
+from websocket import create_connection
 
 class disposableHostGenerator():
     sources = {
@@ -21,6 +22,7 @@ class disposableHostGenerator():
         'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
                   'https://mail-temp.com', 'https://10minutemail.com/10MinuteMail/resources/session/address',
                   'https://correotemporal.org', 'https://hismail.ru' ],
+        'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
         'whitelist_file': [ 'whitelist.txt' ]
@@ -78,6 +80,14 @@ class disposableHostGenerator():
                     lines = [line.strip().decode('utf8') for line in f]
             except IOError:
                 return
+        elif fmt == 'ws':
+            try:
+                ws = create_connection(url)
+                data = ws.recv() + "\n"
+                data += ws.recv() + "\n"
+                ws.close()
+            except IOError:
+                return
         else:
             data = ''
             try:
@@ -123,6 +133,10 @@ class disposableHostGenerator():
 
                 self.sha1[sha1_str.lower()] = None
             return True
+        elif fmt == 'ws':
+            for line in data.splitlines():
+                if line[0] == 'D':
+                    lines = line[1:].split(',')
 
         lines_filtered = [line.lower().strip(' .,;@') for line in lines]
         lines_filtered = list(filter(lambda line: self.domain_regex.match(line), lines_filtered))
