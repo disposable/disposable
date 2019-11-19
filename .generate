@@ -12,13 +12,14 @@ class disposableHostGenerator():
         'list': [ 'https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7',
                   'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
                   'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt',
-                  'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt' ],
+                  'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt',
+                  'https://getnada.com/api/v1/domains' ],
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
-                  'https://robot-mail.com/api/v1/domains' ],
+                  'https://api4.temp-mail.org/request/domains/format/json' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/' ],
-        'option-select-box': [ 'https://temp-mail.org/en/option/change/', 'https://spamwc.de/' ],
+        'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
         'whitelist_file': [ 'whitelist.txt' ]
     }
@@ -26,6 +27,7 @@ class disposableHostGenerator():
     scrape_sources = [ 'https://emailfake.com' ]
 
     domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
+    domain_search_regex = re.compile(r'["\']([a-z\d-]{,63}\.[a-z\d-]{,63})["\']')
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
     html_re = {
         'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
@@ -115,8 +117,11 @@ class disposableHostGenerator():
                 self.sha1[sha1_str.lower()] = None
             return True
 
-        lines = [line.lower().strip(' .,;@') for line in lines]
-        lines = list(filter(lambda line: self.domain_regex.match(line), lines))
+        lines_filtered = [line.lower().strip(' .,;@') for line in lines]
+        lines_filtered = list(filter(lambda line: self.domain_regex.match(line), lines_filtered))
+
+        if not lines_filtered:
+            lines_filtered = self.domain_search_regex.findall(str(data))
 
         if fmt in ('whitelist', 'whitelist_file'):
             for host in lines:
@@ -124,14 +129,14 @@ class disposableHostGenerator():
                     self.skip.append(host)
             return True
 
-        if not lines:
+        if not lines_filtered:
             self.verbosePrint('WRN No results for this source: {0}'.format(url))
             return
 
-        self.source_map[url] = lines
+        self.source_map[url] = lines_filtered
         need_scrape = False
 
-        for host in lines:
+        for host in lines_filtered:
             self.domains[host] = None
             self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
             self.legacy_domains[host] = None
