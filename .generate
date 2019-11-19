@@ -20,7 +20,8 @@ class disposableHostGenerator():
                   'https://api4.temp-mail.org/request/domains/format/json' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
-                  'https://mail-temp.com', 'https://10minutemail.com/10MinuteMail/resources/session/address' ],
+                  'https://mail-temp.com', 'https://10minutemail.com/10MinuteMail/resources/session/address',
+                  'https://correotemporal.org' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
         'whitelist_file': [ 'whitelist.txt' ]
@@ -28,15 +29,16 @@ class disposableHostGenerator():
 
     scrape_sources = [ 'https://emailfake.com', 'https://mail-temp.com' ]
 
-    domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
-    domain_search_regex = re.compile(r'["\']([a-z\d-]{,63}\.[a-z\d-]{,63})["\']')
+    domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z-]{,63})+$')
+    domain_search_regex = re.compile(r'["\']([a-z\d-]{,63}\.[a-z\-]{,63})["\']')
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
     html_re = {
         'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
         'tempr.email': re.compile("""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
         'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
         'mail-temp.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-        '10minutemail.com': re.compile(""".+?@?([a-z0-9\.-]{1,128})""", re.I)
+        '10minutemail.com': re.compile(""".+?@?([a-z0-9\.-]{1,128})""", re.I),
+        'correotemporal.org': domain_search_regex
     }
 
     def __init__(self, options = None, out_file = None):
