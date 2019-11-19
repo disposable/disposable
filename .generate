@@ -21,7 +21,7 @@ class disposableHostGenerator():
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
                   'https://mail-temp.com', 'https://10minutemail.com/10MinuteMail/resources/session/address',
-                  'https://correotemporal.org', 'https://hismail.ru' ],
+                  'https://correotemporal.org', 'https://hismail.ru', 'https://fakemailgenerator.net' ],
         'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
@@ -36,6 +36,7 @@ class disposableHostGenerator():
     html_re = {
         'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
         'tempr.email': re.compile("""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
+        'fakemailgenerator.net': re.compile('<a.+?data-mailhost="@?([a-z0-9\.-]{1,128})"', re.I),
         'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
         'mail-temp.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
         '10minutemail.com': re.compile(""".+?@?([a-z0-9\.-]{1,128})""", re.I),
