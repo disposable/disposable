@@ -6,6 +6,7 @@ import urllib.request
 import sys
 import hashlib
 import html
+import time
 
 class disposableHostGenerator():
     sources = {
@@ -18,13 +19,14 @@ class disposableHostGenerator():
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
                   'https://api4.temp-mail.org/request/domains/format/json' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
-        'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/' ],
+        'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
+                  'https://mail-temp.com' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
         'whitelist_file': [ 'whitelist.txt' ]
     }
 
-    scrape_sources = [ 'https://emailfake.com' ]
+    scrape_sources = [ 'https://emailfake.com', 'https://mail-temp.com' ]
 
     domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z\d-]{,63})+$')
     domain_search_regex = re.compile(r'["\']([a-z\d-]{,63}\.[a-z\d-]{,63})["\']')
@@ -32,7 +34,8 @@ class disposableHostGenerator():
     html_re = {
         'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
         'tempr.email': re.compile("""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
-        'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I)
+        'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
+        'mail-temp.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I)
     }
 
     def __init__(self, options = None, out_file = None):
@@ -146,6 +149,7 @@ class disposableHostGenerator():
                 need_scrape = True
 
         if need_scrape:
+            time.sleep(1)
             return self.process_source(url, fmt, encoding, timeout, retry+1)
 
         return True
