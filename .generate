@@ -7,6 +7,7 @@ import sys
 import hashlib
 import html
 import time
+import tldextract
 from websocket import create_connection
 
 class disposableHostGenerator():
@@ -106,7 +107,7 @@ class disposableHostGenerator():
 
                 data = urllib.request.urlopen(req, timeout=timeout).read() or ''
             except Exception as err:
-                if retry_errors_re.find(str(err)) and retry < 150:
+                if self.retry_errors_re.find(str(err)) and retry < 150:
                     time.sleep(1)
                     return self.process_source(url, fmt, encoding, timeout, retry+1)
 
@@ -148,7 +149,7 @@ class disposableHostGenerator():
                     lines = line[1:].split(',')
 
         lines_filtered = [line.lower().strip(' .,;@') for line in lines]
-        lines_filtered = list(filter(lambda line: self.domain_regex.match(line), lines_filtered))
+        lines_filtered = list(filter(lambda line: self.checkValidDomain(line), lines_filtered))
 
         if not lines_filtered:
             lines_filtered = self.domain_search_regex.findall(str(data))
@@ -163,7 +164,10 @@ class disposableHostGenerator():
             self.verbosePrint('WRN No results for this source: {0}'.format(url))
             return
 
-        self.source_map[url] = lines_filtered
+        if url in self.scrape_sources:
+            self.source_map[url] = scrape
+        else:
+            self.source_map[url] = lines_filtered
         need_scrape = False
 
         for host in lines_filtered:
@@ -213,6 +217,20 @@ class disposableHostGenerator():
                     self.legacy_domains[line.strip()] = None
         except IOError:
             pass
+
+    """ check if given host is not a TLD and a valid domainname
+    """
+    def checkValidDomain(self, host):
+        try:
+            if not self.domain_regex.match(host):
+                return False
+
+            t = tldextract.extract(host)
+            return (t.domain != '' and t.suffix != '')
+        except Exception:
+            pass
+
+        return False
 
     """ check if MX is resolved for given domain
     """
