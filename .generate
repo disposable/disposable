@@ -165,7 +165,7 @@ class disposableHostGenerator():
             return
 
         if url in self.scrape_sources:
-            self.source_map[url] = scrape
+            self.source_map[url] = self.scrape
         else:
             self.source_map[url] = lines_filtered
         need_scrape = False
