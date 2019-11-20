@@ -8,6 +8,8 @@ import hashlib
 import html
 import time
 import tldextract
+import dns.resolver
+import concurrent.futures
 from websocket import create_connection
 
 class disposableHostGenerator():
@@ -236,7 +238,6 @@ class disposableHostGenerator():
     """
     @staticmethod
     def fetchMX(domain):
-        import dns.resolver
         resolver = dns.resolver.Resolver()
         resolver.lifetime = resolver.timeout = 20.0
 
@@ -275,7 +276,6 @@ class disposableHostGenerator():
         # MX verify check
         self.no_mx = []
         if self.options.get('dns_verify'):
-            import concurrent.futures
             with concurrent.futures.ThreadPoolExecutor(max_workers=80) as executor:
                 futures = [ executor.submit(disposableHostGenerator.fetchMX, domain) for domain in self.domains.keys() ]
                 for future in concurrent.futures.as_completed(futures):
