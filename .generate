@@ -6,6 +6,7 @@ import urllib.request
 import sys
 import hashlib
 import html
+import time
 from websocket import create_connection
 
 class disposableHostGenerator():
@@ -72,7 +73,7 @@ class disposableHostGenerator():
         if fmt not in self.supported_formats:
             return
         retry = 0 if retry is None else retry
-        if retry > 9:
+        if retry > 25:
             self.verbosePrint("Retry {0} for {1}".format(retry, url))
 
         lines = []
@@ -103,6 +104,10 @@ class disposableHostGenerator():
 
                 data = urllib.request.urlopen(req, timeout=timeout).read() or ''
             except Exception as err:
+                if 'urlopen error timed out' in str(err) and retry < 150:
+                    time.sleep(1)
+                    return self.process_source(url, fmt, encoding, timeout, retry+1)
+
                 self.verbosePrint('WRN Fetching URL {0} failed, see error: {1}'.format(url, err))
                 return
 
@@ -164,15 +169,17 @@ class disposableHostGenerator():
             self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
             self.legacy_domains[host] = None
 
-            if url in self.scrape_sources and self.scrape_count < 5:
-                if not host in self.scrape:
-                    self.scrape.append(host)
-                else:
-                    self.scrape_count += 1
+            if url in self.scrape_sources and not host in self.scrape:
+                self.scrape.append(host)
                 need_scrape = True
+                self.scrape_count = 0
 
+        if not need_scrape and url in self.scrape_sources and self.scrape_count < 2 and retry > 0:
+            self.scrape_count += 1
+            need_scrape = True
 
         if need_scrape:
+            time.sleep(1)
             return self.process_source(url, fmt, encoding, timeout, retry+1)
 
         self.scrape_count = 0
