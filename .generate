@@ -45,6 +45,8 @@ class disposableHostGenerator():
         'correotemporal.org': domain_search_regex
     }
 
+    retry_errors_re = re.compile("""(The read operation timed out|urlopen error timed out)""", re.I)
+
     def __init__(self, options = None, out_file = None):
         self.no_mx = {}
         self.domains = {}
@@ -104,7 +106,7 @@ class disposableHostGenerator():
 
                 data = urllib.request.urlopen(req, timeout=timeout).read() or ''
             except Exception as err:
-                if 'urlopen error timed out' in str(err) and retry < 150:
+                if retry_errors_re.find(str(err)) and retry < 150:
                     time.sleep(1)
                     return self.process_source(url, fmt, encoding, timeout, retry+1)
 
