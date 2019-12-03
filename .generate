@@ -109,7 +109,7 @@ class disposableHostGenerator():
 
                 data = urllib.request.urlopen(req, timeout=timeout).read() or ''
             except Exception as err:
-                if self.retry_errors_re.find(str(err)) and retry < 150:
+                if self.retry_errors_re.findall(str(err)) and retry < 150:
                     time.sleep(1)
                     return self.process_source(url, fmt, encoding, timeout, retry+1)
 
