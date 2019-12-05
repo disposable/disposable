@@ -26,7 +26,8 @@ class disposableHostGenerator():
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
                   'https://mail-temp.com', 'https://10minutemail.com/10MinuteMail/resources/session/address',
-                  'https://correotemporal.org', 'https://hismail.ru', 'https://fakemailgenerator.net', 'https://clipmails.com' ],
+                  'https://correotemporal.org', 'https://hismail.ru', 'https://fakemailgenerator.net', 'https://clipmails.com',
+                  'https://www.luxusmail.org' ],
         'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
@@ -45,6 +46,7 @@ class disposableHostGenerator():
         'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
         'mail-temp.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
         '10minutemail.com': re.compile(""".+?@?([a-z0-9\.-]{1,128})""", re.I),
+        'luxusmail.org': re.compile('<a.+?domain-selector"[^>]+>@([a-z0-9\.-]{1,128})', re.I),
         'correotemporal.org': domain_search_regex
     }
 
