@@ -22,7 +22,7 @@ class disposableHostGenerator():
                   'https://getnada.com/api/v1/domains' ],
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
-                  'https://api4.temp-mail.org/request/domains/format/json' ],
+                  'https://api4.temp-mail.org/request/domains/format/json', 'https://api.internal.temp-mail.io/api/v2/domains' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
                   'https://mail-temp.com', 'https://10minutemail.com/10MinuteMail/resources/session/address',
@@ -122,6 +122,8 @@ class disposableHostGenerator():
             lines = [line.decode(encoding) for line in data.splitlines()]
         elif fmt == 'json':
             raw = json.loads(data.decode(encoding))
+            if 'domains' in raw:
+                raw = raw['domains']
             if not isinstance(raw, list):
                 self.verbosePrint('WRN This URL does not contain a JSON array: {0}'.format(url))
                 return
