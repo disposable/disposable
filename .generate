@@ -18,6 +18,7 @@ class disposableHostGenerator():
                   'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
                   'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt',
                   'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt',
+                  'https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/master/emailondeck.com_domains_from_bdea.cc.txt',
                   'https://block-temporary-email.com/disposable_domain_list.txt',
                   'https://getnada.com/api/v1/domains' ],
         'file': [ 'blacklist.txt' ],
