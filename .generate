@@ -26,10 +26,10 @@ class disposableHostGenerator():
                   'https://api4.temp-mail.org/request/domains/format/json', 'https://api.internal.temp-mail.io/api/v2/domains',
                   'https://www.fakemail.net/index/index' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
-        'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
-                  'https://mail-temp.com', 'https://10minutemail.com/10MinuteMail/resources/session/address',
-                  'https://correotemporal.org', 'https://hismail.ru', 'https://fakemailgenerator.net', 'https://clipmails.com',
-                  'https://www.luxusmail.org', 'https://www.temp-mails.com' ],
+        'html': [ 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
+                  'https://mail-temp.com', 'https://10minutemail.com/session/address',
+                  'https://correotemporal.org', 'https://fakemailgenerator.net', 'https://clipmails.com',
+                  'https://www.luxusmail.org', 'https://www.temp-mails.com', 'https://tempmailo.com' ],
         'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
@@ -49,6 +49,7 @@ class disposableHostGenerator():
         'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
         'mail-temp.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
         '10minutemail.com': re.compile(""".+?@?([a-z0-9\.-]{1,128})""", re.I),
+        'tempmailo.com': [re.compile("""servers = \[([^\]]+)\]""", re.I), re.compile("""'([^']+)'""")],
         'luxusmail.org': re.compile('<a.+?domain-selector"[^>]+>@([a-z0-9\.-]{1,128})', re.I),
         'correotemporal.org': domain_search_regex
     }
@@ -157,7 +158,14 @@ class disposableHostGenerator():
                     dom_re = re_item
                     break
 
-            opts = dom_re.findall(data.decode(encoding))
+            raw = data.decode(encoding)
+
+            if type(dom_re) is list:
+                for cl_re in dom_re[:-1]:
+                    raw = '\n'.join(cl_re.findall(raw))
+                dom_re = dom_re[-1]
+
+            opts = dom_re.findall(raw)
             lines = list(map(lambda opt: html.unescape(opt[0]) if type(opt) is tuple else opt, opts))
         elif fmt == 'sha1':
             lines = data.splitlines()
