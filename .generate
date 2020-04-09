@@ -23,12 +23,13 @@ class disposableHostGenerator():
                   'https://getnada.com/api/v1/domains' ],
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
-                  'https://api4.temp-mail.org/request/domains/format/json', 'https://api.internal.temp-mail.io/api/v2/domains' ],
+                  'https://api4.temp-mail.org/request/domains/format/json', 'https://api.internal.temp-mail.io/api/v2/domains',
+                  'https://www.fakemail.net/index/index' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'html': [ 'https://tempr.email', 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
                   'https://mail-temp.com', 'https://10minutemail.com/10MinuteMail/resources/session/address',
                   'https://correotemporal.org', 'https://hismail.ru', 'https://fakemailgenerator.net', 'https://clipmails.com',
-                  'https://www.luxusmail.org' ],
+                  'https://www.luxusmail.org', 'https://www.temp-mails.com' ],
         'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
@@ -42,6 +43,7 @@ class disposableHostGenerator():
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
     html_re = {
         'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
+        'www.temp-mails.com': re.compile("""<option.+?value="([^"]+)">\d+\s*\@""", re.I),
         'tempr.email': re.compile("""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
         'fakemailgenerator.net': re.compile('<a.+?data-mailhost="@?([a-z0-9\.-]{1,128})"', re.I),
         'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
@@ -102,12 +104,18 @@ class disposableHostGenerator():
         else:
             data = ''
             try:
+                headers = {
+                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'
+                }
+
+                if fmt == 'json':
+                    headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
+                    headers['X-Requested-With'] = 'XMLHttpRequest'
+
                 req = urllib.request.Request(
                     url,
                     data=None,
-                    headers={
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'
-                    }
+                    headers=headers
                 )
 
                 data = urllib.request.urlopen(req, timeout=timeout).read() or ''
@@ -122,9 +130,19 @@ class disposableHostGenerator():
         if fmt in ('whitelist', 'list'):
             lines = [line.decode(encoding) for line in data.splitlines()]
         elif fmt == 'json':
-            raw = json.loads(data.decode(encoding))
+            try:
+                raw = json.loads(data.decode(encoding))
+            except Exception as e:
+                if 'Unexpected UTF-8 BOM' in str(e):
+                    raw = json.loads(data.decode('utf-8-sig'))
+
             if 'domains' in raw:
                 raw = raw['domains']
+            if 'email' in raw:
+                s = re.search('^.+?@?([a-z0-9\.-]{1,128})$', raw['email'])
+                if s:
+                    raw = [ s.group(1) ]
+
             if not isinstance(raw, list):
                 self.verbosePrint('WRN This URL does not contain a JSON array: {0}'.format(url))
                 return
