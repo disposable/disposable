@@ -17,3 +17,6 @@ mindless.com
 i.ua
 com.ar
 brainonfire.net
+example.com
+example.net
+example.org
