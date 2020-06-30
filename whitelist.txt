@@ -20,3 +20,4 @@ brainonfire.net
 example.com
 example.net
 example.org
+hey.com
