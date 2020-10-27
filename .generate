@@ -30,7 +30,8 @@ class disposableHostGenerator():
         'html': [ 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
                   'https://mail-temp.com', 'https://10minutemail.com/session/address',
                   'https://correotemporal.org', 'https://fakemailgenerator.net', 'https://clipmails.com',
-                  'https://www.luxusmail.org', 'https://www.temp-mails.com', 'https://tempmailo.com', 'https://lortemail.dk' ],
+                  'https://www.luxusmail.org', 'https://www.temp-mails.com', 'https://tempmailo.com', 'https://lortemail.dk',
+                  'https://tempmail.plus/en/' ],
         'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt' ],
@@ -51,6 +52,7 @@ class disposableHostGenerator():
         'mail-temp.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
         '10minutemail.com': re.compile(""".+?@?([a-z0-9\.-]{1,128})""", re.I),
         'tempmailo.com': [re.compile("""servers = \[([^\]]+)\]""", re.I), re.compile("""'([^']+)'""")],
+        'tempmail.plus': re.compile("""<button type="button" class="dropdown-item">([^<]+)</button>""", re.I),
         'luxusmail.org': re.compile('<a.+?domain-selector"[^>]+>@([a-z0-9\.-]{1,128})', re.I),
         'correotemporal.org': domain_search_regex
     }
@@ -107,7 +109,7 @@ class disposableHostGenerator():
             data = ''
             try:
                 headers = {
-                        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'
                 }
 
                 if fmt == 'json':
