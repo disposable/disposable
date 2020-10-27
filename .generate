@@ -18,7 +18,7 @@ class disposableHostGenerator():
                   'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
                   'https://gist.githubusercontent.com/smeinecke/78b229031cc885a776c8b84c56e1c5ee/raw/0b2200109d68537c588066d05bc70b6bbe1d312d/generator_email_hosts',
                   'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt',
-                  'https://raw.githubusercontent.com/andreis/disposable/master/blacklist.txt',
+                  'https://raw.githubusercontent.com/disposable/disposable/master/blacklist.txt',
                   'https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/master/emailondeck.com_domains_from_bdea.cc.txt',
                   'https://getnada.com/api/v1/domains',
                   'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/23fba92d2d835928a9217198d5a96b8ea1d52c93/disposableEmailDomains.txt' ],
@@ -33,7 +33,7 @@ class disposableHostGenerator():
                   'https://www.luxusmail.org', 'https://www.temp-mails.com', 'https://tempmailo.com', 'https://lortemail.dk' ],
         'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
-        'whitelist': [ 'https://raw.githubusercontent.com/andreis/disposable/master/whitelist.txt' ],
+        'whitelist': [ 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt' ],
         'whitelist_file': [ 'whitelist.txt' ]
     }
 
