@@ -31,7 +31,7 @@ class disposableHostGenerator():
                   'https://mail-temp.com', 'https://10minutemail.com/session/address',
                   'https://correotemporal.org', 'https://fakemailgenerator.net', 'https://clipmails.com',
                   'https://www.luxusmail.org', 'https://www.temp-mails.com', 'https://tempmailo.com', 'https://lortemail.dk',
-                  'https://tempmail.plus/en/' ],
+                  'https://tempmail.plus/en/', 'https://mailpoof.com' ],
         'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt' ],
