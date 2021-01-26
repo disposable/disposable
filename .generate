@@ -208,7 +208,10 @@ class disposableHostGenerator():
 
         for host in lines_filtered:
             self.domains[host] = None
-            self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
+            try:
+                self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
+            except:
+                pass
             self.legacy_domains[host] = None
 
             if url in self.scrape_sources and not host in self.scrape:
