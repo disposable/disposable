@@ -21,21 +21,26 @@ class disposableHostGenerator():
                   'https://raw.githubusercontent.com/disposable/disposable/master/blacklist.txt',
                   'https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/master/emailondeck.com_domains_from_bdea.cc.txt',
                   'https://getnada.com/api/v1/domains',
-                  'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/23fba92d2d835928a9217198d5a96b8ea1d52c93/disposableEmailDomains.txt' ],
+                  'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/23fba92d2d835928a9217198d5a96b8ea1d52c93/disposableEmailDomains.txt',
+                  'https://raw.githubusercontent.com/Steemhunt/mailchecker/master/list.txt',
+                  'https://raw.githubusercontent.com/Xyborg/disposable-burner-email-providers/master/disposable-domains.txt',
+                  'https://raw.githubusercontent.com/willwhite/freemail/master/data/disposable.txt',
+                  'https://raw.githubusercontent.com/stopforumspam/disposable_email_domains/master/blacklist.txt' ],
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
-                  'https://api4.temp-mail.org/request/domains/format/json', 'https://api.internal.temp-mail.io/api/v2/domains',
+                  'https://web1.temp-mail.org/request/domains/format/json', 'https://api.internal.temp-mail.io/api/v2/domains',
                   'https://www.fakemail.net/index/index' ],
         'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
         'html': [ 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
                   'https://mail-temp.com', 'https://10minutemail.com/session/address',
                   'https://correotemporal.org', 'https://fakemailgenerator.net', 'https://clipmails.com',
-                  'https://www.luxusmail.org', 'https://www.temp-mails.com', 'https://tempmailo.com', 'https://lortemail.dk',
+                  'https://www.luxusmail.org', 'https://www.temp-mails.com', 'https://lortemail.dk',
                   'https://tempmail.plus/en/', 'https://mailpoof.com' ],
         'ws': [ 'wss://dropmail.me/websocket' ],
         'option-select-box': [ 'https://spamwc.de/' ],
         'whitelist': [ 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt' ],
-        'whitelist_file': [ 'whitelist.txt' ]
+        'whitelist_file': [ 'whitelist.txt' ],
+        'custom': [ 'tempmailo' ]
     }
 
     scrape_sources = [ 'https://emailfake.com', 'https://mail-temp.com' ]
@@ -83,6 +88,34 @@ class disposableHostGenerator():
         if self.options.get('verbose'):
             print(msg)
 
+    def fetch_url(self, url, headers = {}, timeout=3, raw=False, retry=None):
+        retry = 0 if retry is None else retry
+        if retry > 25:
+            self.verbosePrint("Retry {0} for {1}".format(retry, url))
+
+        headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0')
+        opener = urllib.request.build_opener()
+
+        try:
+
+            req = urllib.request.Request(
+                url,
+                data=None,
+                headers=headers
+            )
+
+            res = opener.open(req, timeout=timeout)
+            if raw:
+                return res
+            return res.read() or ''
+        except Exception as err:
+            if self.retry_errors_re.search(str(err)) and retry < 150:
+                time.sleep(1)
+                return self.fetch_url(url, headers, timeout, raw, retry+1)
+
+            self.verbosePrint('WRN Fetching URL {0} failed, see error: {1}'.format(url, err))
+            return
+
     def process_source(self, url, fmt, encoding='utf-8', timeout=3, retry=None):
         if fmt not in self.supported_formats:
             return
@@ -97,38 +130,29 @@ class disposableHostGenerator():
                     lines = [line.strip().decode('utf8') for line in f]
             except IOError:
                 return
+        elif fmt == 'custom':
+            lines = getattr(self, "process_%s" % url)()
+            if lines is None:
+                return
         elif fmt == 'ws':
             try:
                 ws = create_connection(url)
-                data = ws.recv() + "\n"
-                data += ws.recv() + "\n"
+                data = ''
+                l = 0
+                while l < 3:
+                    data += ws.recv() + "\n"
+                    l += 1
                 ws.close()
-            except IOError:
+            except IOError as e:
+                print(e)
                 return
         else:
-            data = ''
-            try:
-                headers = {
-                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0'
-                }
-
-                if fmt == 'json':
-                    headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
-                    headers['X-Requested-With'] = 'XMLHttpRequest'
-
-                req = urllib.request.Request(
-                    url,
-                    data=None,
-                    headers=headers
-                )
-
-                data = urllib.request.urlopen(req, timeout=timeout).read() or ''
-            except Exception as err:
-                if self.retry_errors_re.search(str(err)) and retry < 150:
-                    time.sleep(1)
-                    return self.process_source(url, fmt, encoding, timeout, retry+1)
-
-                self.verbosePrint('WRN Fetching URL {0} failed, see error: {1}'.format(url, err))
+            headers = {}
+            if fmt == 'json':
+                headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
+                headers['X-Requested-With'] = 'XMLHttpRequest'
+            data = self.fetch_url(url, headers, timeout)
+            if data is None:
                 return
 
         if fmt in ('whitelist', 'list'):
@@ -224,11 +248,57 @@ class disposableHostGenerator():
             need_scrape = True
 
         if need_scrape:
-            time.sleep(1)
+            time.sleep(8)
             return self.process_source(url, fmt, encoding, timeout, retry+1)
 
         self.scrape_count = 0
         return True
+
+    def process_tempmailo(self):
+        res = self.fetch_url('https://tempmailo.com/', raw=True)
+        if res is None:
+            return
+
+        cookies = {}
+        for (ky, vl) in res.getheaders():
+            if ky != 'Set-Cookie':
+                continue
+
+            (ck_name, ck_data) = vl.split('=', 1)
+            if ck_name.startswith('__'):
+                continue
+            (ck_value, ck_rest) = ck_data.split(';', 1)
+            cookies[ck_name] = ck_value
+
+        body = res.read().decode('utf8')
+
+        f = re.search('name="__RequestVerificationToken".+?value="([^"]+)"', body)
+        if not f:
+            self.verbosePrint('WRN Failed to fetch __RequestVerificationToken')
+            return
+
+        cookie = []
+        for ky, vl in cookies.items():
+            cookie.append(ky + '=' + vl)
+
+        headers = {
+            'requestverificationtoken': f.group(1),
+            'accept': 'application/json, text/plain, */*',
+            'x-requested-with': 'XMLHttpRequest',
+            'referer': 'https://tempmailo.com/',
+            'cookie': '; '.join(cookie)
+        }
+
+        data = self.fetch_url('https://tempmailo.com/changemail', headers=headers)
+        if not data:
+            return data
+
+        lines = []
+        for line in data.splitlines():
+            (name, domain) = line.decode('utf8').split('@', 1)
+            lines.append(domain)
+
+        return lines
 
     """ read and compare to current (old) domains file
     """
