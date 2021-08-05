@@ -4,7 +4,7 @@ const fs = require('fs');
 const { execSync } = require('child_process')
 const path = require('path');
 
-const domainJson = path.join(__dirname, 'disposable.js');
+const domainJson = path.join(__dirname, 'domains.json');
 
 let domainMap = {}
 
@@ -34,7 +34,8 @@ function updateDomains() {
 }
 
 function loadDomains() {
-    const arr = JSON.parse(fs.readFileSync(domainJson).toString());
+    const file = fs.readFileSync(domainJson).toString();
+    const arr = JSON.parse(file);
     domainMap = {}
 
     for (let i = 0; i < arr.length; ++i)
