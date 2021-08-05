@@ -34,7 +34,7 @@ function updateDomains() {
 }
 
 function loadDomains() {
-    const arr = require('./domains')
+    const arr = JSON.parse(fs.readFileSync(domainJson).toString());
     domainMap = {}
 
     for (let i = 0; i < arr.length; ++i)
