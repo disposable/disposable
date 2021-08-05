@@ -24,6 +24,10 @@
   },
   "homepage": "https://github.com/disposable/disposable#readme",
   "devDependencies": {
+    "@types/axios": "^0.14.0",
     "mocha": "^3.1.2"
+  },
+  "dependencies": {
+    "axios": "^0.21.1"
   }
 }

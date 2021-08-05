@@ -1,8 +1,10 @@
 'use strict';
 
 const fs = require('fs');
-const { execSync } = require('child_process')
 const path = require('path');
+const axios = require('axios');
+const { resolve } = require('path');
+const { rejects } = require('assert');
 
 const domainJson = path.join(__dirname, 'domains.json');
 
@@ -24,18 +26,35 @@ function shouldUpdateDomains() {
     return false;
 }
 
-function updateDomains() {
-    try {
-        execSync(path.join(__dirname, 'update.sh'))
-    } catch (err) {
-        console.error('Error updating domains')
-        console.error(err.message)
-    }
+async function updateDomains() {
+    const stream = await axios.get(
+        'https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.json',
+        { responseType: 'stream' });
+
+    const file = fs.createWriteStream(domainJson);
+
+    const end = new Promise(() => {
+        file.on('end', () => resolve())
+        file.on('error', (err) => rejects(err))
+    });
+
+    stream.data.pipe(file);
+
+    return end;
 }
 
 function loadDomains() {
-    const file = fs.readFileSync(domainJson).toString();
-    const arr = JSON.parse(file);
+    if (!fs.existsSync(domainJson)) {
+        return;
+    }
+    let arr;
+    try {
+        const file = fs.readFileSync(domainJson).toString();
+        arr = JSON.parse(file);
+    } catch {
+        updateDomains();
+        return
+    }
     domainMap = {}
 
     for (let i = 0; i < arr.length; ++i)
@@ -48,20 +67,36 @@ if (shouldUpdateDomains()) {
 
 loadDomains()
 
+
+function validateSync(domainOrEmail) {
+
+    if (!fs.existsSync(domainJson)) {
+        return true;
+    }
+
+    const domain = domainOrEmail.split('@').pop()
+    const isValid = !domainMap.hasOwnProperty(domain)
+
+    return isValid;
+}
+
+async function _validate(domainOrEmail) {
+    if (shouldUpdateDomains()) {
+        await updateDomains()
+        await loadDomains()
+    }
+
+    return validateSync(domainOrEmail);
+}
+
+
 module.exports = {
     validate: function (domainOrEmail, callback) {
-        if (shouldUpdateDomains()) {
-            updateDomains()
-            loadDomains()
-        }
-        
-        const domain = domainOrEmail.split('@').pop()
-        const isValid = !domainMap.hasOwnProperty(domain)
 
-        if (!callback) {
-            return isValid
+        if (callback) {
+            _validate(domainOrEmail).then(result => callback(null, result))
         }
 
-        callback(null, isValid)
+        return validateSync(domainOrEmail);
     }
 }
