@@ -1,6 +1,6 @@
 {
   "name": "disposable-email",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "description": "Disposable email domains",
   "main": "disposable.js",
   "scripts": {
