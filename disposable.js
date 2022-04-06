@@ -27,7 +27,6 @@ function shouldUpdateDomains() {
 }
 
 async function updateDomains() {
-    console.log('Updating disposable emails...');
     const stream = await axios.get(
         'https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.json',
         { responseType: 'stream' });
@@ -35,12 +34,9 @@ async function updateDomains() {
     const file = fs.createWriteStream(domainJson);
 
     const end = new Promise(() => {
-        file.on('close', () => {
-            console.log('Disposable emails updated!');
-            resolve()
-        })
+        file.on('close', resolve);
         file.on('error', (err) => {
-            console.log('Error updating disposable emails');
+            console.log('Error updating disposable emails: %s. %s', err.message, err.stack);
             rejects(err)
         })
     });
