@@ -21,3 +21,7 @@ example.com
 example.net
 example.org
 hey.com
+xwaretech.com
+xwaretech.info
+xwaretech.net
+xwaretech.tk
