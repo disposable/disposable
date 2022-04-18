@@ -16,7 +16,8 @@
 .LSOverride
 
 # Icon must end with two \r
-Icon
+Icon
+
 
 # Thumbnails
 ._*
@@ -309,3 +310,6 @@ domains_sha1.json
 domains_sha1.txt
 domains_source_map.txt
 generate.py
+
+
+/.secrets
