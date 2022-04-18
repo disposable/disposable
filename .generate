@@ -474,7 +474,7 @@ class disposableHostGenerator():
         return False
 
     @staticmethod
-    def fetchMX(domain: str, nameservers: list = [], dnsport: int = 53) -> tuple:
+    def fetchMX(domain: str, nameservers: list = [], dnsport: int = 53, resolver_timeout: int = 20) -> tuple:
         """Check if given domain has a valid MX entry
 
         :param domain: domain name to validate
@@ -487,7 +487,7 @@ class disposableHostGenerator():
         :rtype: tuple
         """
         resolver = dns.resolver.Resolver()
-        resolver.lifetime = resolver.timeout = 20.0
+        resolver.lifetime = resolver.timeout = resolver_timeout
 
         if nameservers:
             resolver.nameservers = nameservers
@@ -581,7 +581,7 @@ class disposableHostGenerator():
         if self.options.get('dns_verify'):
             with concurrent.futures.ThreadPoolExecutor(max_workers=self.options.get('dns_threads', 1)) as executor:
                 futures = [executor.submit(disposableHostGenerator.fetchMX, domain,
-                                           self.options.get('nameservers'), self.options.get('dnsport'))
+                                           self.options.get('nameservers'), self.options.get('dnsport'), self.options.get('dns_timeout', 20))
                            for domain in self.domains]
                 for future in concurrent.futures.as_completed(futures):
                     (domain, valid) = future.result()
@@ -670,6 +670,7 @@ if __name__ == '__main__':
     parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
     parser.add_argument('--max-retry', type=int, dest='max_retry', help='maximum count of retries to fetch an url', default=25)
     parser.add_argument('--dns-threads', type=int, dest='dns_threads', help='count of threads to use for dns resolving', default=80)
+    parser.add_argument('--dns-timeout', type=int, dest="dns_timeout", help='timeout for dns request', default=20.0)
     parser.add_argument('--ns', action='append', dest='nameservers', help='set custom resolver for dns-verify')
     parser.add_argument('--dnsport', type=int, dest='dnsport', help='set custom resolver port for dns-verify')
     options = parser.parse_args()
