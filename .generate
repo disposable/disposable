@@ -11,6 +11,7 @@ import tldextract
 import argparse
 import dns.resolver
 import dns.rdatatype
+import dns.exception
 import concurrent.futures
 import logging
 import http.client
@@ -473,13 +474,15 @@ class disposableHostGenerator():
         return False
 
     @staticmethod
-    def fetchMX(domain: str, nameservers: list = []) -> tuple:
+    def fetchMX(domain: str, nameservers: list = [], dnsport: int = 53) -> tuple:
         """Check if given domain has a valid MX entry
 
         :param domain: domain name to validate
         :type domain: str
         :param nameservers: list of nameservers to use for resolve
         :type nameservers: list
+        :param dnsport: set port of dns server
+        :type dnsport: int
         :return: tuple (domain name, bool valid)
         :rtype: tuple
         """
@@ -489,18 +492,57 @@ class disposableHostGenerator():
         if nameservers:
             resolver.nameservers = nameservers
 
+        if dnsport:
+            resolver.port = dnsport
+
         valid = False
         try:
             r = resolver.query(domain, dns.rdatatype.MX)
             if not r:
                 return (domain, False)
             mx_list = {rr.exchange.to_text(rr.exchange).lower() for rr in r.rrset}
-            valid = '.' not in mx_list and mx_list != ['localhost']
+            if '.' in mx_list or mx_list == ['localhost']:
+                return (domain, False)
+
+            valid = True
             logging.debug(f"MX Lookup: {domain} => {valid} ({','.join(mx_list)})")
         except KeyboardInterrupt:
             raise
+        except dns.resolver.NXDOMAIN:
+            logging.debug(f"MX Lookup: {domain} - Resolved but no entry for")
+        except dns.resolver.NoNameservers:
+            logging.debug(f"MX Lookup: {domain} - Answer refused")
+        except dns.resolver.NoAnswer:
+            logging.debug(f"MX Lookup: {domain} - No answer section")
+        except dns.exception.Timeout:
+            logging.debug(f"MX Lookup: {domain} - Timeout")
+            return (domain, False)
         except Exception as e:
             pass
+
+        if not valid:
+            try:
+                r = resolver.query(domain, dns.rdatatype.A)
+                if not r:
+                    return (domain, False)
+
+                ips = [a.address for a in r]
+                if '127.0.0.1' not in ips:
+                    valid = True
+                    logging.debug(f"A Lookup: {domain} => {valid} ({','.join(ips)})")
+            except KeyboardInterrupt:
+                raise
+            except dns.resolver.NXDOMAIN:
+                logging.debug(f"A Lookup: {domain} - Resolved but no entry for")
+            except dns.resolver.NoNameservers:
+                logging.debug(f"A Lookup: {domain} - Answer refused")
+            except dns.resolver.NoAnswer:
+                logging.debug(f"A Lookup: {domain} - No answer section")
+            except dns.exception.Timeout:
+                logging.debug(f"A Lookup: {domain} - Timeout")
+                return (domain, False)
+            except Exception as e:
+                pass
         return (domain, valid)
 
     def listSources(self):
@@ -537,8 +579,10 @@ class disposableHostGenerator():
         # MX verify check
         self.no_mx = []
         if self.options.get('dns_verify'):
-            with concurrent.futures.ThreadPoolExecutor(max_workers=80) as executor:
-                futures = [executor.submit(disposableHostGenerator.fetchMX, domain, self.options.get('nameservers')) for domain in self.domains]
+            with concurrent.futures.ThreadPoolExecutor(max_workers=self.options.get('dns_threads', 1)) as executor:
+                futures = [executor.submit(disposableHostGenerator.fetchMX, domain,
+                                           self.options.get('nameservers'), self.options.get('dnsport'))
+                           for domain in self.domains]
                 for future in concurrent.futures.as_completed(futures):
                     (domain, valid) = future.result()
                     if not valid:
@@ -624,8 +668,10 @@ if __name__ == '__main__':
     parser.add_argument('-q', '--quiet', action='store_false', dest='verbose', help='hide verbose output')
     parser.add_argument('-D', '--debug', action='store_true', dest='debug', help='show debug output and exit on warn/error')
     parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
-    parser.add_argument('--max-retry', dest='max_retry', help='maximum count of retries to fetch an url', default=25)
+    parser.add_argument('--max-retry', type=int, dest='max_retry', help='maximum count of retries to fetch an url', default=25)
+    parser.add_argument('--dns-threads', type=int, dest='dns_threads', help='count of threads to use for dns resolving', default=80)
     parser.add_argument('--ns', action='append', dest='nameservers', help='set custom resolver for dns-verify')
+    parser.add_argument('--dnsport', type=int, dest='dnsport', help='set custom resolver port for dns-verify')
     options = parser.parse_args()
 
     dhg = disposableHostGenerator(vars(options))
