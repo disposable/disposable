@@ -200,7 +200,7 @@ class disposableHostGenerator():
         if source.get('type') in ('file', 'whitelist_file'):
             return remoteData.fetchFile(source.get('src'))
         elif source.get('type') == 'custom':
-            return getattr(self, f"_process{source.get('src')}")()
+            return getattr(self, "_process%s" % source.get('src'))()
         elif source.get('type') == 'ws':
             return remoteData.fetchWS(source.get('src'))
 
@@ -509,17 +509,17 @@ class disposableHostGenerator():
                 return (domain, False)
 
             valid = True
-            logging.debug(f"MX Lookup: {domain} => {valid} ({','.join(mx_list)})")
+            logging.debug("MX Lookup: %s => %s (%s)", domain, valid, ','.join(mx_list))
         except KeyboardInterrupt:
             raise
         except dns.resolver.NXDOMAIN:
-            logging.debug(f"MX Lookup: {domain} - Resolved but no entry")
+            logging.debug("MX Lookup: %s - Resolved but no entry", domain)
         except dns.resolver.NoNameservers:
-            logging.debug(f"MX Lookup: {domain} - Answer refused")
+            logging.debug("MX Lookup: %s - Answer refused", domain)
         except dns.resolver.NoAnswer:
-            logging.debug(f"MX Lookup: {domain} - No answer section")
+            logging.debug("MX Lookup: %s - No answer section", domain)
         except dns.exception.Timeout:
-            logging.debug(f"MX Lookup: {domain} - Timeout")
+            logging.debug("MX Lookup: %s - Timeout", domain)
             return (domain, False)
         except Exception as e:
             pass
@@ -533,17 +533,17 @@ class disposableHostGenerator():
                 ips = [a.address for a in r]
                 if '127.0.0.1' not in ips:
                     valid = True
-                    logging.debug(f"A Lookup: {domain} => {valid} ({','.join(ips)})")
+                    logging.debug("A Lookup: %s => %s (%s)", domain, valid, ','.join(ips))
             except KeyboardInterrupt:
                 raise
             except dns.resolver.NXDOMAIN:
-                logging.debug(f"A Lookup: {domain} - Resolved but no entry")
+                logging.debug("A Lookup: %s - Resolved but no entry", domain)
             except dns.resolver.NoNameservers:
-                logging.debug(f"A Lookup: {domain} - Answer refused")
+                logging.debug("A Lookup: %s - Answer refused", domain)
             except dns.resolver.NoAnswer:
-                logging.debug(f"A Lookup: {domain} - No answer section")
+                logging.debug("A Lookup: %s - No answer section", domain)
             except dns.exception.Timeout:
-                logging.debug(f"A Lookup: {domain} - Timeout")
+                logging.debug("A Lookup: %s - Timeout", domain)
                 return (domain, False)
             except Exception as e:
                 pass
@@ -567,7 +567,7 @@ class disposableHostGenerator():
 
             try:
                 if not self.process(source) and self.options.get('debug'):
-                    raise RuntimeError(f"No result for {source}")
+                    raise RuntimeError("No result for %s" % source)
             except Exception as err:
                 logging.exception(err)
                 raise err
