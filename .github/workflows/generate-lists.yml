@@ -24,4 +24,4 @@ jobs:
       - name: Add missing dependencies
         run: "poetry install"
       - name: Run script
-        run: "poetry run ./.generate --dns-verify -D --ns 127.0.0.1 --dnsport 5335 --source-map --src 'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912'"
+        run: "poetry run ./.generate --dns-verify -D --dns-threads 5 --ns 127.0.0.1 --dnsport 5335 --source-map --src 'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912'"
