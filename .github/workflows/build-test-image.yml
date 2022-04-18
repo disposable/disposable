@@ -2,8 +2,7 @@ name: build base docker image
 
 on:
   push:
-    paths:
-      - 'docker/'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
@@ -35,7 +34,8 @@ jobs:
       - name: Build and push Docker image
         uses: docker/build-push-action@v2
         with:
-          context: "./docker"
+          context: "./"
+          file: "docker/Dockerfile"
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
