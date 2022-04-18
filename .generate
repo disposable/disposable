@@ -25,6 +25,7 @@ class disposableHostGenerator():
                   'https://raw.githubusercontent.com/daisy1754/jp-disposable-emails/master/list.txt',
                   'https://raw.githubusercontent.com/willwhite/freemail/master/data/disposable.txt',
                   'https://raw.githubusercontent.com/stopforumspam/disposable_email_domains/master/blacklist.txt',
+                  'https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt',
                   'https://raw.githubusercontent.com/martenson/disposable-email-domains/master/disposable_email_blocklist.conf' ],
         'file': [ 'blacklist.txt' ],
         'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
