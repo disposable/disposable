@@ -242,7 +242,7 @@ class disposableHostGenerator():
             if 'email' in raw:
                 s = re.search(r'^.+?@?([a-z0-9\.-]{1,128})$', raw['email'])
                 if s:
-                    raw = [s[1]]
+                    raw = [s.groups(1)]
 
             if not isinstance(raw, list):
                 logging.warning('This URL does not contain a JSON array')
@@ -410,7 +410,7 @@ class disposableHostGenerator():
             return None
 
         headers = {
-            'requestverificationtoken': f[1],
+            'requestverificationtoken': f.groups(1),
             'accept': 'application/json, text/plain, */*',
             'x-requested-with': 'XMLHttpRequest',
             'referer': 'https://tempmailo.com/',
