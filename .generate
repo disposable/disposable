@@ -368,7 +368,7 @@ class disposableHostGenerator():
             if type(processed_entries) is bool:
                 return processed_entries
 
-            logging.debug(f'Processed {processed_entries} entries')
+            logging.debug('Processed %s entries', processed_entries)
             if source.get('scrape'):
                 if processed_entries:
                     scrape_retry = 0
@@ -414,7 +414,7 @@ class disposableHostGenerator():
             'accept': 'application/json, text/plain, */*',
             'x-requested-with': 'XMLHttpRequest',
             'referer': 'https://tempmailo.com/',
-            'cookie': '; '.join([f'{ky}={vl}' for ky, vl in cookies.items()])
+            'cookie': '; '.join(['%s=%s' % (ky, vl) for ky, vl in cookies.items()])
         }
 
         data = remoteData.fetchHTTP('https://tempmailo.com/changemail', headers=headers)
@@ -436,7 +436,7 @@ class disposableHostGenerator():
         """
         self.old_domains = set()
         try:
-            with open(f'{self.out_file}.txt') as f:
+            with open(self.out_file + '.txt') as f:
                 for line in f:
                     self.old_domains.add(line.strip())
         except IOError:
@@ -444,7 +444,7 @@ class disposableHostGenerator():
 
         self.old_sha1 = set()
         try:
-            with open(f'{self.out_file}_sha1.txt') as f:
+            with open(self.out_file + '_sha1.txt') as f:
                 for line in f:
                     self.old_sha1.add(line.strip())
         except IOError:
@@ -452,7 +452,7 @@ class disposableHostGenerator():
 
         self.legacy_domains = set()
         try:
-            with open(f'{self.out_file}_legacy.txt') as f:
+            with open(self.out_file + '_legacy.txt') as f:
                 for line in f:
                     self.legacy_domains.add(line.strip())
         except IOError:
@@ -626,17 +626,17 @@ class disposableHostGenerator():
         """write new list to file(s)
         """
         domains = sorted(self.domains)
-        with open(f'{self.out_file}.txt', 'w') as ff:
+        with open(self.out_file + '.txt', 'w') as ff:
             ff.write('\n'.join(domains))
 
-        with open(f'{self.out_file}.json', 'w') as ff:
+        with open(self.out_file + '.json', 'w') as ff:
             ff.write(json.dumps(domains))
 
         if self.options.get('source_map'):
-            with open(f'{self.out_file}_source_map.txt', 'w') as ff:
+            with open(self.out_file + '_source_map.txt', 'w') as ff:
                 for (src_url, source_map_domains) in sorted(self.source_map.items()):
                     source_map_domains.sort()
-                    ff.write(f'{src_url}:' + ('\n%s:' % src_url).join(source_map_domains) + "\n")
+                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(source_map_domains) + "\n")
 
         if self.no_mx:
             domains_with_mx = self.domains
@@ -647,18 +647,18 @@ class disposableHostGenerator():
                     pass
 
             domains = sorted(domains_with_mx)
-            with open(f'{self.out_file}_mx.txt', 'w') as ff:
+            with open(self.out_file + '_mx.txt', 'w') as ff:
                 ff.write('\n'.join(domains))
 
-            with open(f'{self.out_file}_mx.json', 'w') as ff:
+            with open(self.out_file + '_mx.json', 'w') as ff:
                 ff.write(json.dumps(domains))
 
         # write new hash list to file(s)
         domains_sha1 = sorted(self.sha1)
-        with open(f'{self.out_file}_sha1.txt', 'w') as ff:
+        with open(self.out_file + '_sha1.txt', 'w') as ff:
             ff.write('\n'.join(domains_sha1))
 
-        with open(f'{self.out_file}_sha1.json', 'w') as ff:
+        with open(self.out_file + '_sha1.json', 'w') as ff:
             ff.write(json.dumps(domains_sha1))
 
 
