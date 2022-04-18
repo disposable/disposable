@@ -17,3 +17,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Fix resolv config
+        run: |
+          service unbound restart
+          echo "nameserver 127.0.0.1" >/etc/resolv.conf.deploy
+          mv /etc/resolv.conf.deploy /etc/resolv.conf
+          ping google.com
+#      - name: Run script
+#        run: ./.generate
