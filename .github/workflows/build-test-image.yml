@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - 'docker/'
+  workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
