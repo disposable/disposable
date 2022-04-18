@@ -1,0 +1,19 @@
+# This is a basic workflow that is manually triggered
+
+name: generate lists
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build list
+    runs-on: ubuntu-latest
+    container:
+      image: "ghcr.io/${{ github.repository }}:workflow"
+      credentials:
+        username: disposable
+        password: ${{ secrets.GITHUB_TOKEN }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3

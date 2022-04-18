@@ -18,6 +18,7 @@ ADD . /disposable/
 
 WORKDIR /disposable
 
+# install disposable dependencies
 RUN set -e \
     && cd /disposable \
     && pip3 install poetry \
