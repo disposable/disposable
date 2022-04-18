@@ -10,7 +10,7 @@ jobs:
     name: Build list
     runs-on: ubuntu-latest
     container:
-      image: "ghcr.io/${{ github.repository }}:workflow"
+      image: "ghcr.io/${{ github.repository }}:latest"
       credentials:
         username: disposable
         password: ${{ secrets.GITHUB_TOKEN }}
