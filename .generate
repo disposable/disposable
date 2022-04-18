@@ -509,7 +509,7 @@ class disposableHostGenerator():
         except KeyboardInterrupt:
             raise
         except dns.resolver.NXDOMAIN:
-            logging.debug(f"MX Lookup: {domain} - Resolved but no entry for")
+            logging.debug(f"MX Lookup: {domain} - Resolved but no entry")
         except dns.resolver.NoNameservers:
             logging.debug(f"MX Lookup: {domain} - Answer refused")
         except dns.resolver.NoAnswer:
@@ -533,7 +533,7 @@ class disposableHostGenerator():
             except KeyboardInterrupt:
                 raise
             except dns.resolver.NXDOMAIN:
-                logging.debug(f"A Lookup: {domain} - Resolved but no entry for")
+                logging.debug(f"A Lookup: {domain} - Resolved but no entry")
             except dns.resolver.NoNameservers:
                 logging.debug(f"A Lookup: {domain} - Answer refused")
             except dns.resolver.NoAnswer:
