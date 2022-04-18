@@ -1,5 +1,5 @@
-dnspython3>=1.11.1
-idna>=2.8
-tldextract>=2.2.2
-websocket-client>=0.56.0
-urllib3>=1.9.1
+dnspython3>=1.15.0
+idna>=3.3
+tldextract==2.2.3
+websocket-client>=0.59.0
+urllib3>=1.26.9

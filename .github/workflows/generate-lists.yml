@@ -17,3 +17,11 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
+      - name: Start unbound service
+        run: |
+          service unbound start
+          service unbound status
+      - name: Add missing dependencies
+        run: "poetry install"
+      - name: Run script
+        run: "poetry run ./.generate --dns-verify -D --dns-threads 10 --dns-timeout 3 --ns 127.0.0.1 --dnsport 5335 --source-map --src 'https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt'"
