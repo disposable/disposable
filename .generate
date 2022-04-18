@@ -301,7 +301,7 @@ class disposableHostGenerator():
         lines_filtered = list(filter(lambda line: self.checkValidDomain(line), lines_filtered))
 
         if not lines_filtered:
-            lines_filtered = self.domain_search_regex.findall(str(data, 'utf-8'))
+            lines_filtered = self.domain_search_regex.findall(str(data))
 
         if source['type'] in ('whitelist', 'whitelist_file'):
             for host in lines_filtered:
