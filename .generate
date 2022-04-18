@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-
+from typing import Any, Union
 import json
 import re
 import urllib.request
@@ -8,326 +8,459 @@ import hashlib
 import html
 import time
 import tldextract
+import argparse
 import dns.resolver
+import dns.rdatatype
 import concurrent.futures
+import logging
+import http.client
 from websocket import create_connection
 
-class disposableHostGenerator():
-    sources = {
-        'list': [ 'https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7',
-                  'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912',
-                  'https://gist.githubusercontent.com/smeinecke/78b229031cc885a776c8b84c56e1c5ee/raw/0b2200109d68537c588066d05bc70b6bbe1d312d/generator_email_hosts',
-                  'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt',
-                  'https://raw.githubusercontent.com/disposable/disposable/master/blacklist.txt',
-                  'https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/master/emailondeck.com_domains_from_bdea.cc.txt',
-                  'https://getnada.com/api/v1/domains',
-                  'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/23fba92d2d835928a9217198d5a96b8ea1d52c93/disposableEmailDomains.txt',
-                  'https://raw.githubusercontent.com/willwhite/freemail/master/data/disposable.txt',
-                  'https://raw.githubusercontent.com/stopforumspam/disposable_email_domains/master/blacklist.txt' ],
-        'file': [ 'blacklist.txt' ],
-        'json': [ 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json',
-                  'https://web1.temp-mail.org/request/domains/format/json', 'https://api.internal.temp-mail.io/api/v2/domains',
-                  'https://www.fakemail.net/index/index' ],
-        'sha1': [ 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt' ],
-        'html': [ 'https://emailfake.com', 'https://www.guerrillamail.com/en/',
-                  'https://mail-temp.com', 'https://10minutemail.com/session/address',
-                  'https://correotemporal.org', 'https://fakemailgenerator.net', 'https://clipmails.com',
-                  'https://www.luxusmail.org', 'https://www.temp-mails.com', 'https://lortemail.dk',
-                  'https://tempmail.plus/en/', 'https://mailpoof.com' ],
-        'ws': [ 'wss://dropmail.me/websocket' ],
-        'option-select-box': [ 'https://spamwc.de/' ],
-        'whitelist': [ 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt' ],
-        'whitelist_file': [ 'whitelist.txt' ],
-        'custom': [ 'tempmailo' ]
-    }
 
-    scrape_sources = [ 'https://emailfake.com', 'https://mail-temp.com' ]
+class remoteData():
+    retry_errors_re = re.compile(r"""(The read operation timed out|urlopen error timed out)""", re.I)
 
-    domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z-]{,63})+$')
-    domain_search_regex = re.compile(r'["\']([a-z\d-]{,63}\.[a-z\-]{,63})["\']')
-    sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
-    html_re = {
-        'generic': re.compile("""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
-        'www.temp-mails.com': re.compile("""<option.+?value="([^"]+)">\d+\s*\@""", re.I),
-        'tempr.email': re.compile("""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
-        'fakemailgenerator.net': re.compile('<a.+?data-mailhost="@?([a-z0-9\.-]{1,128})"', re.I),
-        'emailfake.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-        'mail-temp.com': re.compile("""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-        '10minutemail.com': re.compile(""".+?@?([a-z0-9\.-]{1,128})""", re.I),
-        'tempmailo.com': [re.compile("""servers = \[([^\]]+)\]""", re.I), re.compile("""'([^']+)'""")],
-        'tempmail.plus': re.compile("""<button type="button" class="dropdown-item">([^<]+)</button>""", re.I),
-        'luxusmail.org': re.compile('<a.+?domain-selector"[^>]+>@([a-z0-9\.-]{1,128})', re.I),
-        'correotemporal.org': domain_search_regex
-    }
+    @staticmethod
+    def fetchFile(src: str) -> list:
+        """Read local file
 
-    retry_errors_re = re.compile("""(The read operation timed out|urlopen error timed out)""", re.I)
+        :param src: filename
+        :type src: str
+        :return: list of entries
+        :rtype: list
+        """
+        try:
+            with open(src, 'rb') as f:
+                return [line.strip().decode('utf8') for line in f]
+        except IOError:
+            return []
 
-    def __init__(self, options = None, out_file = None):
-        self.no_mx = {}
-        self.domains = {}
-        self.sha1 = {}
-        self.old_domains = {}
-        self.old_sha1 = {}
-        self.legacy_domains = {}
-        self.source_map = {}
-        self.skip = []
-        self.scrape = []
+    @staticmethod
+    def fetchWS(src: str) -> str:
+        """Fetch data by websocket
 
-        if not options:
-            options = {}
+        :param src: url to connect to
+        :type src: str
+        :return: raw data received by websocket
+        :rtype: str
+        """
+        try:
+            ws = create_connection(src)
+            data = ''.join(ws.recv() + "\n" for _ in range(3))
+            ws.close()
+        except IOError as e:
+            logging.exception(e)
+            return ''
+        return data
 
-        self.options = options
-        self.supported_formats = list(self.sources.keys())
-        self.out_file = 'domains' if out_file is None else out_file
+    @staticmethod
+    def fetchHTTPRaw(url: str, headers: dict = None, timeout: int = 3, max_retry: int = 25) -> Union[http.client.HTTPResponse, None]:
+        """Fetch data from HTTP(s) URL and return http object
 
-        self.scrape_count = 0
-
-    def verbosePrint(self, msg):
-        if self.options.get('verbose'):
-            print(msg)
-
-    def fetch_url(self, url, headers = {}, timeout=3, raw=False, retry=None):
-        retry = 0 if retry is None else retry
-        if retry > 25:
-            self.verbosePrint("Retry {0} for {1}".format(retry, url))
-
+        :param url: URL to call
+        :type url: str
+        :param headers: additional headers, defaults to None
+        :type headers: dict, optional
+        :param timeout: timeout for call, defaults to 3
+        :type timeout: int, optional
+        :param max_retry: maximum number of retries, defaults to 150
+        :type max_retry: int, optional
+        :return: _description_
+        :rtype: Union[http.client.HTTPResponse, None]
+        """
+        if headers is None:
+            headers = {}
+        retry = 0
         headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0')
         opener = urllib.request.build_opener()
-
-        try:
-
-            req = urllib.request.Request(
-                url,
-                data=None,
-                headers=headers
-            )
-
-            res = opener.open(req, timeout=timeout)
-            if raw:
-                return res
-            return res.read() or ''
-        except Exception as err:
-            if self.retry_errors_re.search(str(err)) and retry < 150:
-                time.sleep(1)
-                return self.fetch_url(url, headers, timeout, raw, retry+1)
-
-            self.verbosePrint('WRN Fetching URL {0} failed, see error: {1}'.format(url, err))
-            return
-
-    def process_source(self, url, fmt, encoding='utf-8', timeout=3, retry=None):
-        if fmt not in self.supported_formats:
-            return
-        retry = 0 if retry is None else retry
-        if retry > 25:
-            self.verbosePrint("Retry {0} for {1}".format(retry, url))
-
-        lines = []
-        if fmt in ('file', 'whitelist_file'):
+        while retry < max_retry:
             try:
-                with open(url, 'rb') as f:
-                    lines = [line.strip().decode('utf8') for line in f]
-            except IOError:
-                return
-        elif fmt == 'custom':
-            lines = getattr(self, "process_%s" % url)()
-            if lines is None:
-                return
-        elif fmt == 'ws':
-            try:
-                ws = create_connection(url)
-                data = ''
-                l = 0
-                while l < 3:
-                    data += ws.recv() + "\n"
-                    l += 1
-                ws.close()
-            except IOError as e:
-                print(e)
-                return
-        else:
-            headers = {}
-            if fmt == 'json':
-                headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
-                headers['X-Requested-With'] = 'XMLHttpRequest'
-            data = self.fetch_url(url, headers, timeout)
-            if data is None:
-                return
+                req = urllib.request.Request(
+                    url,
+                    data=None,
+                    headers=headers
+                )
+                return opener.open(req, timeout=timeout)
+            except Exception as e:
+                retry += 1
+                logging.error(e)
+                if remoteData.retry_errors_re.search(str(e)) and retry < max_retry:
+                    time.sleep(1)
+                    continue
 
-        if fmt in ('whitelist', 'list'):
-            lines = [line.decode(encoding) for line in data.splitlines()]
-        elif fmt == 'json':
+                logging.warning('Fetching URL %s failed, see error: %s', url, e)
+                break
+        return None
+
+    @staticmethod
+    def fetchHTTP(url: str, headers: dict = None, timeout: int = 3, max_retry: int = 25) -> bytes:
+        """Fetch data from HTTP(s) URL and return content
+
+        :param url: URL to call
+        :type url: str
+        :param headers: additional headers, defaults to None
+        :type headers: dict, optional
+        :param timeout: timeout for call, defaults to 3
+        :type timeout: int, optional
+        :param max_retry: maximum number of retries, defaults to 150
+        :type max_retry: int, optional
+        :return: read content as bytes
+        :rtype: bytes
+        """
+        res = remoteData.fetchHTTPRaw(url, headers, timeout, max_retry)
+        return (res and res.read()) or b''
+
+
+class disposableHostGenerator():
+    domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z-]{,63})+$')
+    domain_search_regex = re.compile(r'["\']([a-z\d-]{,63}\.[a-z\-]{,63})["\']')
+    html_generic_re = re.compile(r"""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)
+    sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
+
+    sources = [
+        # whitelist has to be loaded first!
+        {'type': 'whitelist', 'src': 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt'},
+        {'type': 'whitelist_file', 'src': 'whitelist.txt'},
+        {'type': 'list', 'src': 'https://gist.githubusercontent.com/adamloving/4401361/raw/66688cf8ad890433b917f3230f44489aa90b03b7'},
+        {'type': 'list', 'src': 'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912'},
+        {'type': 'list', 'src': 'https://gist.githubusercontent.com/smeinecke/78b229031cc885a776c8b84c56e1c5ee/raw/0b2200109d68537c588066d05bc70b6bbe1d312d/generator_email_hosts'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/disposable/disposable/master/blacklist.txt'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/master/emailondeck.com_domains_from_bdea.cc.txt'},
+        {'type': 'list', 'src': 'https://getnada.com/api/v1/domains'},
+        {'type': 'list', 'src': 'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/23fba92d2d835928a9217198d5a96b8ea1d52c93/disposableEmailDomains.txt'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/willwhite/freemail/master/data/disposable.txt'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/stopforumspam/disposable_email_domains/master/blacklist.txt'},
+        {'type': 'json', 'src': 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'},
+        # {'type': 'json', 'src': 'https://web2.temp-mail.org/request/domains/format/json'},
+        {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
+        {'type': 'json', 'src': 'https://www.fakemail.net/index/index', 'scrape': True},
+        {'type': 'json', 'src': 'https://api.disposablemailbox.com/domains'},
+        {'type': 'file', 'src': 'blacklist.txt'},
+        {'type': 'sha1', 'src': 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt'},
+        # {'type': 'html', 'src': 'https://emailfake.com',
+        #    'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
+        #    'scrape': True},
+        {'type': 'html', 'src': 'https://www.guerrillamail.com/en/'},
+        # {'type': 'html', 'src': 'https://mail-temp.com',
+        #    'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        {'type': 'html', 'src': 'https://10minutemail.com/session/address',
+            'regex': re.compile(r""".+?@?([a-z0-9\.-]{1,128})""", re.I)},
+        {'type': 'html', 'src': 'https://correotemporal.org', 'regex': domain_search_regex},
+        {'type': 'html', 'src': 'https://fakemailgenerator.net',
+            'regex': re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
+        {'type': 'html', 'src': 'https://clipmails.com', 'regex': [
+            re.compile(r"""wire:initial-data="(.+?domains[^\"]+)\""""),
+            re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
+            re.compile(r"""\&quot;([^\&]+)\&quot;""")
+        ]},
+        {'type': 'html', 'src': 'https://www.luxusmail.org',
+            'regex': re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
+        {'type': 'html', 'src': 'https://www.temp-mails.com',
+            'regex': re.compile(r"""<option.+?value="([^"]+)">\d+\s*\@""", re.I)},
+        {'type': 'html', 'src': 'https://lortemail.dk'},
+        {'type': 'html', 'src': 'https://tempmail.plus/en/',
+            'regex': re.compile(r"""<button type=\"button\" class=\"dropdown-item\">([^<]+)</button>""", re.I)},
+        {'type': 'html', 'src': 'https://tempr.email',
+            'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
+        {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
+        #{'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
+    ]
+
+    def __init__(self, options: dict = None, out_file: str = None):
+        self.no_mx = set()
+        self.domains = set()
+        self.sha1 = set()
+        self.old_domains = set()
+        self.old_sha1 = set()
+        self.legacy_domains = set()
+        self.source_map = {}
+        self.skip = set()
+        self.scrape = set()
+        self.options = options or {}
+        self.out_file = 'domains' if out_file is None else out_file
+        log_level = logging.INFO if self.options.get('verbose') else logging.WARN
+        if self.options.get('debug'):
+            log_level = logging.DEBUG
+        logging.basicConfig(format="%(levelname)s: %(message)s", level=log_level)
+
+    def _fetchData(self, source: dict) -> Any:
+        """Fetch remote data for given source
+
+        :param source: source dict
+        :type source: dict
+        :return: Data of fetch method
+        :rtype: Any
+        """
+        if source.get('type') in ('file', 'whitelist_file'):
+            return remoteData.fetchFile(source.get('src'))
+        elif source.get('type') == 'custom':
+            return getattr(self, f"_process{source.get('src')}")()
+        elif source.get('type') == 'ws':
+            return remoteData.fetchWS(source.get('src'))
+
+        headers = {}
+        if source.get('type') == 'json':
+            headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
+            headers['X-Requested-With'] = 'XMLHttpRequest'
+        return remoteData.fetchHTTP(source.get('src'), headers, source.get('timeout', 3), self.options.get('max_retry'))
+
+    def _preProcessData(self, source: dict, data: Union[list, bytes, str]) -> Union[list, bool]:
+        """preProcess data return by fetch method
+
+        :param source: source dict
+        :type source: dict
+        :param data: Raw data
+        :type data: Union[list, bytes, str]
+        :return: Parsed data or bool if failed/invalid
+        :rtype: Union[list, bool]
+        """
+        if type(data) is list:
+            return data
+
+        fmt = source['type']
+        if fmt == 'json':
+            raw = {}
             try:
-                raw = json.loads(data.decode(encoding))
+                raw = json.loads(data.decode(source.get('encoding', 'utf-8')))
             except Exception as e:
                 if 'Unexpected UTF-8 BOM' in str(e):
                     raw = json.loads(data.decode('utf-8-sig'))
 
+            if not raw:
+                logging.warning('No data in json')
+                return False
+
             if 'domains' in raw:
                 raw = raw['domains']
+
             if 'email' in raw:
-                s = re.search('^.+?@?([a-z0-9\.-]{1,128})$', raw['email'])
+                s = re.search(r'^.+?@?([a-z0-9\.-]{1,128})$', raw['email'])
                 if s:
-                    raw = [ s.group(1) ]
+                    raw = [s[1]]
 
             if not isinstance(raw, list):
-                self.verbosePrint('WRN This URL does not contain a JSON array: {0}'.format(url))
-                return
-            lines = list(filter(lambda line: line and isinstance(line, str), raw))
-        elif fmt == 'option-select-box':
-            dom_re = re.compile("""<option value="@?[^"]+">@?([a-z0-9\-\.]+\.[a-z0-9\-\.]+)<\/option>""", re.I)
-            lines = dom_re.findall(data.decode(encoding))
-        elif fmt == 'html':
-            dom_re = self.html_re['generic']
-            for (re_domain, re_item) in self.html_re.items():
-                if re_domain != 'generic' and re_domain in url:
-                    dom_re = re_item
-                    break
+                logging.warning('This URL does not contain a JSON array')
+                return False
+            return list(filter(lambda line: line and isinstance(line, str), raw))
 
-            raw = data.decode(encoding)
+        if fmt in ('whitelist', 'list', 'file', 'whitelist_file'):
+            return [line.decode(source.get('encoding', 'utf-8')) for line in data.splitlines()]
 
-            if type(dom_re) is list:
-                for cl_re in dom_re[:-1]:
-                    raw = '\n'.join(cl_re.findall(raw))
-                dom_re = dom_re[-1]
+        if fmt == 'html':
+            raw = data.decode(source.get('encoding', 'utf-8'))
+            html_re = source.get('regex', self.html_generic_re)
+            if type(html_re) is not list:
+                html_re = [html_re, ]
 
-            opts = dom_re.findall(raw)
-            lines = list(map(lambda opt: html.unescape(opt[0]) if type(opt) is tuple else opt, opts))
-        elif fmt == 'sha1':
-            lines = data.splitlines()
-            lines = [line.decode('ascii').lower() for line in lines]
-            for sha1_str in lines:
+            html_ipt = raw
+            html_list = []
+            for html_re_item in html_re:
+                html_list = html_re_item.findall(html_ipt)
+                html_ipt = '\n'.join(list(map(lambda o: o[0] if type(o) is tuple else o, html_list)))
+
+            return list(map(lambda opt: html.unescape(opt[0]) if type(opt) is tuple else opt, html_list))
+
+        if fmt == 'sha1':
+            x = 0
+            for sha1_str in [line.decode('ascii').lower() for line in data.splitlines()]:
                 if not sha1_str or not self.sha1_regex.match(sha1_str):
                     continue
 
-                self.sha1[sha1_str.lower()] = None
+                x += 1
+                self.sha1.add(sha1_str)
+            if x < 1:
+                logging.warning('SHA1 source did not return any valid sha1 hash')
             return True
-        elif fmt == 'ws':
+
+        if fmt == 'ws':
             for line in data.splitlines():
                 if line[0] == 'D':
-                    lines = line[1:].split(',')
+                    return line[1:].split(',')
 
+        return False
+
+    def _postProcessData(self, source: dict, data: Union[bytes, str], lines: list) -> int:
+        """Post process data returned by preProcess method
+
+        :param source: source dict
+        :type source: dict
+        :param data: raw data
+        :type data: Union[bytes, str]
+        :param lines: parsed lines
+        :type lines: list
+        :return: number of added domains
+        :rtype: int
+        """
         lines_filtered = [line.lower().strip(' .,;@') for line in lines]
         lines_filtered = list(filter(lambda line: self.checkValidDomain(line), lines_filtered))
 
         if not lines_filtered:
             lines_filtered = self.domain_search_regex.findall(str(data))
 
-        if fmt in ('whitelist', 'whitelist_file'):
-            for host in lines:
-                if not host in self.skip:
-                    self.skip.append(host)
+        if source['type'] in ('whitelist', 'whitelist_file'):
+            for host in lines_filtered:
+                self.skip.add(host)
             return True
 
         if not lines_filtered:
-            self.verbosePrint('WRN No results for this source: {0}'.format(url))
-            return
+            logging.warning('No results for this source')
+            return False
 
-        if url in self.scrape_sources:
-            self.source_map[url] = self.scrape
-        else:
-            self.source_map[url] = lines_filtered
-        need_scrape = False
+        self.source_map[source['src']] = self.scrape if source.get('scrape') else lines_filtered
 
+        added_domains = 0
+        added_scrape_domains = 0
         for host in lines_filtered:
-            self.domains[host] = None
+            if host not in self.domains:
+                self.domains.add(host)
+                added_domains += 1
+
+            self.legacy_domains.add(host)
+
             try:
-                self.sha1[hashlib.sha1(host.encode('idna')).hexdigest()] = None
-            except:
+                self.sha1.add(hashlib.sha1(host.encode('idna')).hexdigest())
+            except Exception:
                 pass
-            self.legacy_domains[host] = None
 
-            if url in self.scrape_sources and not host in self.scrape:
-                self.scrape.append(host)
-                need_scrape = True
-                self.scrape_count = 0
+            if source.get('scrape') and host not in self.scrape:
+                self.scrape.add(host)
+                added_scrape_domains += 1
 
-        if not need_scrape and url in self.scrape_sources and self.scrape_count < 2 and retry > 0:
-            self.scrape_count += 1
-            need_scrape = True
+        if source.get('scrape'):
+            return added_scrape_domains
 
-        if need_scrape:
-            time.sleep(8)
-            return self.process_source(url, fmt, encoding, timeout, retry+1)
+        return added_domains
 
-        self.scrape_count = 0
-        return True
+    def process(self, source: dict) -> bool:
+        """Fetch data of given source and process
 
-    def process_tempmailo(self):
-        res = self.fetch_url('https://tempmailo.com/', raw=True)
+        :param source: source dict
+        :type source: dict
+        :return: True if process was successfull
+        :rtype: bool
+        """
+        logging.info("Process %s (%s)", source['src'], source['type'])
+
+        max_scrape = 80
+        scrape_max_retry = 8
+        scrape_count = 0
+        self.scrape = set()
+        scrape_retry = 0
+
+        while scrape_count < max_scrape:
+            data = self._fetchData(source)
+            if data is None:
+                logging.warning("No results by %s", source['src'])
+                return False
+
+            logging.debug("Fetched %s bytes", len(data))
+            lines = self._preProcessData(source, data)
+            if type(lines) is bool:
+                return lines
+
+            processed_entries = self._postProcessData(source, data, lines)
+            if type(processed_entries) is bool:
+                return processed_entries
+
+            logging.debug(f'Processed {processed_entries} entries')
+            if source.get('scrape'):
+                if processed_entries:
+                    scrape_retry = 0
+                else:
+                    scrape_retry += 1
+                    if scrape_retry > scrape_max_retry:
+                        return True
+                time.sleep(source.get('timeout', 8))
+                continue
+            return True
+        return False
+
+    def _processTempmailo(self) -> Union[None, list]:
+        """Process source for tempmailo.com
+
+        :return: Either list domains or None if failed
+        :rtype: Union[None, list]
+        """
+        res = remoteData.fetchHTTPRaw('https://tempmailo.com/')
         if res is None:
-            return
+            return None
 
         cookies = {}
         for (ky, vl) in res.getheaders():
-            if ky != 'Set-Cookie':
+            if ky.lower() != 'set-cookie':
                 continue
 
             (ck_name, ck_data) = vl.split('=', 1)
             if ck_name.startswith('__'):
                 continue
-            (ck_value, ck_rest) = ck_data.split(';', 1)
+            (ck_value, _) = ck_data.split(';', 1)
             cookies[ck_name] = ck_value
 
         body = res.read().decode('utf8')
 
         f = re.search('name="__RequestVerificationToken".+?value="([^"]+)"', body)
         if not f:
-            self.verbosePrint('WRN Failed to fetch __RequestVerificationToken')
-            return
-
-        cookie = []
-        for ky, vl in cookies.items():
-            cookie.append(ky + '=' + vl)
+            logging.warning('Failed to fetch __RequestVerificationToken')
+            return None
 
         headers = {
-            'requestverificationtoken': f.group(1),
+            'requestverificationtoken': f[1],
             'accept': 'application/json, text/plain, */*',
             'x-requested-with': 'XMLHttpRequest',
             'referer': 'https://tempmailo.com/',
-            'cookie': '; '.join(cookie)
+            'cookie': '; '.join([f'{ky}={vl}' for ky, vl in cookies.items()])
         }
 
-        data = self.fetch_url('https://tempmailo.com/changemail', headers=headers)
+        data = remoteData.fetchHTTP('https://tempmailo.com/changemail', headers=headers)
         if not data:
-            return data
+            logging.warning('Failed to fetch changemail endpoint')
+            return None
 
         lines = []
         for line in data.splitlines():
-            (name, domain) = line.decode('utf8').split('@', 1)
+            (_, domain) = line.decode('utf8').split('@', 1)
             lines.append(domain)
+
+        logging.info(lines)
 
         return lines
 
-    """ read and compare to current (old) domains file
-    """
     def readFiles(self):
-        self.old_domains = {}
+        """ read and compare to current (old) domains file
+        """
+        self.old_domains = set()
         try:
-            with open(self.out_file + '.txt') as f:
+            with open(f'{self.out_file}.txt') as f:
                 for line in f:
-                    self.old_domains[line.strip()] = None
+                    self.old_domains.add(line.strip())
         except IOError:
             pass
 
-        self.old_sha1 = {}
+        self.old_sha1 = set()
         try:
-            with open(self.out_file + '_sha1.txt') as f:
+            with open(f'{self.out_file}_sha1.txt') as f:
                 for line in f:
-                    self.old_sha1[line.strip()] = None
+                    self.old_sha1.add(line.strip())
         except IOError:
             pass
 
-        self.legacy_domains = {}
+        self.legacy_domains = set()
         try:
-            with open(self.out_file + '_legacy.txt') as f:
+            with open(f'{self.out_file}_legacy.txt') as f:
                 for line in f:
-                    self.legacy_domains[line.strip()] = None
+                    self.legacy_domains.add(line.strip())
         except IOError:
             pass
 
-    """ check if given host is not a TLD and a valid domainname
-    """
-    def checkValidDomain(self, host):
+    def checkValidDomain(self, host: str) -> bool:
+        """check if given host is not a TLD and a valid domainname
+
+        :param host: host to validate
+        :type host: str
+        :return: true if valid domain
+        :rtype: bool
+        """
         try:
             if not self.domain_regex.match(host):
                 return False
@@ -339,50 +472,66 @@ class disposableHostGenerator():
 
         return False
 
-    """ check if MX is resolved for given domain
-    """
     @staticmethod
-    def fetchMX(domain):
+    def fetchMX(domain: str) -> tuple:
+        """Check if given domain has a valid MX entry
+
+        :param domain: domain name to validate
+        :type domain: str
+        :return: tuple (domain name, bool valid)
+        :rtype: tuple
+        """
         resolver = dns.resolver.Resolver()
         resolver.lifetime = resolver.timeout = 20.0
 
         valid = False
         try:
-            if resolver.query(domain, 'MX'):
-                valid = True
+            r = resolver.query(domain, dns.rdatatype.MX)
+            if not r:
+                return (domain, False)
+            mx_list = {rr.exchange.to_text(rr.exchange).lower() for rr in r.rrset}
+            valid = '.' not in mx_list and mx_list != ['localhost']
+            logging.debug(f"MX Lookup: {domain} => {valid} ({','.join(mx_list)})")
         except KeyboardInterrupt:
             raise
-        except:
+        except Exception as e:
             pass
-
         return (domain, valid)
 
-    """ merge all lists
-    """
+    def listSources(self):
+        """list all available sources
+        """
+        for source in self.sources:
+            logging.info("Source %12s: %s", source.get('type'), source.get('src'))
+
     def generate(self):
-        # build domains dict
-        for fmt in self.supported_formats:
-            for src in self.sources[fmt]:
-                if self.options.get('src_filter') is not None and \
-                   not src == self.options.get('src_filter'):
-                    continue
+        """Fetch all data + generate lists
+        """
+        # fetch remove data
+        for source in self.sources:
+            if self.options.get('src_filter') is not None and source.get('src') != self.options.get('src_filter'):
+                continue
 
-                try:
-                    self.process_source(src, fmt)
-                except Exception as err:
-                    self.verbosePrint((src, fmt, err))
-                    raise err
+            try:
+                if not self.process(source) and self.options.get('debug'):
+                    raise RuntimeError(f"No result for {source}")
+            except Exception as err:
+                logging.exception(err)
+                raise err
 
-        # add custom whitelist
+        # remove all domains listed in whitelist from result set
         for domain in self.skip:
-            self.domains.pop(domain, None)
-            self.sha1.pop(hashlib.sha1(domain.encode('idna')).hexdigest(), None)
+            try:
+                self.domains.remove(domain)
+                self.sha1.remove(hashlib.sha1(domain.encode('idna')).hexdigest())
+            except KeyError:
+                continue
 
         # MX verify check
         self.no_mx = []
         if self.options.get('dns_verify'):
             with concurrent.futures.ThreadPoolExecutor(max_workers=80) as executor:
-                futures = [ executor.submit(disposableHostGenerator.fetchMX, domain) for domain in self.domains.keys() ]
+                futures = [executor.submit(disposableHostGenerator.fetchMX, domain) for domain in self.domains]
                 for future in concurrent.futures.as_completed(futures):
                     (domain, valid) = future.result()
                     if not valid:
@@ -393,83 +542,88 @@ class disposableHostGenerator():
                 self.readFiles()
 
             added = list(
-                filter(lambda domain: domain not in self.old_domains, self.domains.keys()))
+                filter(lambda domain: domain not in self.old_domains, self.domains))
             removed = list(
-                filter(lambda domain: domain not in self.domains, self.old_domains.keys()))
+                filter(lambda domain: domain not in self.domains, self.old_domains))
 
             added_sha1 = list(
-                filter(lambda sha_str: sha_str not in self.old_sha1, self.sha1.keys()))
+                filter(lambda sha_str: sha_str not in self.old_sha1, self.sha1))
             removed_sha1 = list(
-                filter(lambda sha_str: sha_str not in self.sha1, self.old_sha1.keys()))
+                filter(lambda sha_str: sha_str not in self.sha1, self.old_sha1))
 
-            self.verbosePrint('Fetched {0} domains and {1} hashes'.format(len(self.domains), len(self.sha1)))
+            logging.info('Fetched %s domains and %s hashes', len(self.domains), len(self.sha1))
             if self.options.get('dns_verify'):
-                self.verbosePrint(' - {0} domain(s) have no MX'.format(len(self.no_mx)))
-            self.verbosePrint(' - {0} domain(s) added'.format(len(added)))
-            self.verbosePrint(' - {0} domain(s) removed'.format(len(removed)))
-            self.verbosePrint(' - {0} hash(es) added'.format(len(added_sha1)))
-            self.verbosePrint(' - {0} hash(es) removed'.format(len(removed_sha1)))
+                logging.info(' - %s domain(s) have no MX', len(self.no_mx))
+            logging.info(' - %s domain(s) added', len(added))
+            logging.info(' - %s domain(s) removed', len(removed))
+            logging.info(' - %s hash(es) added', len(added_sha1))
+            logging.info(' - %s hash(es) removed', len(removed_sha1))
             # stop if nothing has changed
             if len(added) == len(removed) == len(added_sha1) == len(removed_sha1) == 0:
                 return False
 
             if self.options.get('src_filter'):
-                self.verbosePrint(self.domains.keys())
+                logging.info("Fetched: %s", self.domains)
 
         return True
 
     def writeToFile(self):
-        # write new list to file(s)
-        domains = list(self.domains.keys())
-        domains.sort()
-        with open(self.out_file + '.txt', 'w') as ff:
+        """write new list to file(s)
+        """
+        domains = sorted(self.domains)
+        with open(f'{self.out_file}.txt', 'w') as ff:
             ff.write('\n'.join(domains))
 
-        with open(self.out_file + '.json', 'w') as ff:
+        with open(f'{self.out_file}.json', 'w') as ff:
             ff.write(json.dumps(domains))
 
         if self.options.get('source_map'):
-            with open(self.out_file + '_source_map.txt', 'w') as ff:
+            with open(f'{self.out_file}_source_map.txt', 'w') as ff:
                 for (src_url, source_map_domains) in sorted(self.source_map.items()):
                     source_map_domains.sort()
-                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(source_map_domains) + "\n")
+                    ff.write(f'{src_url}:' + ('\n%s:' % src_url).join(source_map_domains) + "\n")
 
         if self.no_mx:
             domains_with_mx = self.domains
             for domain in self.no_mx:
-                domains_with_mx.pop(domain, None)
+                try:
+                    domains_with_mx.remove(domain)
+                except KeyError:
+                    pass
 
-            domains = list(domains_with_mx.keys())
-            domains.sort()
-            with open(self.out_file + '_mx.txt', 'w') as ff:
+            domains = sorted(domains_with_mx)
+            with open(f'{self.out_file}_mx.txt', 'w') as ff:
                 ff.write('\n'.join(domains))
 
-            with open(self.out_file + '_mx.json', 'w') as ff:
+            with open(f'{self.out_file}_mx.json', 'w') as ff:
                 ff.write(json.dumps(domains))
 
         # write new hash list to file(s)
-        domains_sha1 = list(self.sha1.keys())
-        domains_sha1.sort()
-        with open(self.out_file + '_sha1.txt', 'w') as ff:
+        domains_sha1 = sorted(self.sha1)
+        with open(f'{self.out_file}_sha1.txt', 'w') as ff:
             ff.write('\n'.join(domains_sha1))
 
-        with open(self.out_file + '_sha1.json', 'w') as ff:
+        with open(f'{self.out_file}_sha1.json', 'w') as ff:
             ff.write(json.dumps(domains_sha1))
+
 
 if __name__ == '__main__':
     exit_status = 1
-    options = {
-        'dns_verify': True if '--dns-verify' in sys.argv else False,
-        'source_map': True if '--source-map' in sys.argv else False,
-        'src_filter': None,
-        'verbose': False if '--quiet' in sys.argv else True
-    }
+    parser = argparse.ArgumentParser(description='Generate list of dispsable mail hosts.')
+    parser.add_argument('--dns-verify', action='store_true', dest='dns_verify',
+                        help='validate if valid MX / A record is present for hosts')
+    parser.add_argument('--source-map', action='store_true', dest='source_map', help='generate source map')
+    parser.add_argument('--src', dest='src_filter', help='only request entries for given source')
+    parser.add_argument('-q', '--quiet', action='store_false', dest='verbose', help='hide verbose output')
+    parser.add_argument('-D', '--debug', action='store_true', dest='debug', help='show debug output and exit on warn/error')
+    parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
+    parser.add_argument('--max-retry', dest='max_retry', help='maximum count of retries to fetch an url', default=25)
+    options = parser.parse_args()
 
-    if '--src' in sys.argv:
-        options['src_filter'] = sys.argv[sys.argv.index('--src')+1]
-
-    dhg = disposableHostGenerator(options)
-    if dhg.generate() or options.get('src_filter') is not None:
+    dhg = disposableHostGenerator(vars(options))
+    if options.list_sources:
+        dhg.listSources()
+    elif dhg.generate() or options.src_filter is not None:
         exit_status = 0
         dhg.writeToFile()
     sys.exit(exit_status)
