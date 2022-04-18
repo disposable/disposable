@@ -132,19 +132,22 @@ class disposableHostGenerator():
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/23fba92d2d835928a9217198d5a96b8ea1d52c93/disposableEmailDomains.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/willwhite/freemail/master/data/disposable.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/stopforumspam/disposable_email_domains/master/blacklist.txt'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/martenson/disposable-email-domains/master/disposable_email_blocklist.conf'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/daisy1754/jp-disposable-emails/master/list.txt'},
         {'type': 'json', 'src': 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'},
+        # temp-mail.org crawler buggy
         # {'type': 'json', 'src': 'https://web2.temp-mail.org/request/domains/format/json'},
         {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
         {'type': 'json', 'src': 'https://www.fakemail.net/index/index', 'scrape': True},
         {'type': 'json', 'src': 'https://api.disposablemailbox.com/domains'},
         {'type': 'file', 'src': 'blacklist.txt'},
         {'type': 'sha1', 'src': 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt'},
-        # {'type': 'html', 'src': 'https://emailfake.com',
-        #    'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-        #    'scrape': True},
+        {'type': 'html', 'src': 'https://emailfake.com',
+            'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
+            'scrape': True},
         {'type': 'html', 'src': 'https://www.guerrillamail.com/en/'},
-        # {'type': 'html', 'src': 'https://mail-temp.com',
-        #    'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        {'type': 'html', 'src': 'https://mail-temp.com',
+            'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
         {'type': 'html', 'src': 'https://10minutemail.com/session/address',
             'regex': re.compile(r""".+?@?([a-z0-9\.-]{1,128})""", re.I)},
         {'type': 'html', 'src': 'https://correotemporal.org', 'regex': domain_search_regex},
@@ -165,7 +168,7 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://tempr.email',
             'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
         {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
-        #{'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
+        {'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
     ]
 
     def __init__(self, options: dict = None, out_file: str = None):
@@ -669,7 +672,8 @@ if __name__ == '__main__':
     parser.add_argument('-D', '--debug', action='store_true', dest='debug', help='show debug output and exit on warn/error')
     parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
     parser.add_argument('--max-retry', type=int, dest='max_retry', help='maximum count of retries to fetch an url', default=25)
-    parser.add_argument('--dns-threads', type=int, dest='dns_threads', help='count of threads to use for dns resolving', default=80)
+    parser.add_argument('--dns-threads', type=int, dest='dns_threads',
+                        help='count of threads to use for dns resolving', default=80)
     parser.add_argument('--dns-timeout', type=int, dest="dns_timeout", help='timeout for dns request', default=20.0)
     parser.add_argument('--ns', action='append', dest='nameservers', help='set custom resolver for dns-verify')
     parser.add_argument('--dnsport', type=int, dest='dnsport', help='set custom resolver port for dns-verify')

@@ -309,6 +309,8 @@ domains.txt
 domains_sha1.json
 domains_sha1.txt
 domains_source_map.txt
+domains_mx.json
+domains_mx.txt
 generate.py
 
 
