@@ -27,6 +27,4 @@ jobs:
           context: "./"
           file: "docker/Dockerfile"
           push: true
-          tags: "${{ github.repository }}:latest"
-          secrets: |
-            GIT_AUTH_TOKEN=${{ github.token }}
+          tags: "${{ env.REGISTRY }}/${{ github.repository }}:latest"
