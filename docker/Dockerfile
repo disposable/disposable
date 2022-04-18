@@ -1,9 +1,9 @@
 FROM debian:bullseye-slim
 
-ADD docker/assets/dpkg_nodoc /etc/dpkg/dpkg.cfg.d/90_nodoc
-ADD docker/assets/dpkg_nolocale /etc/dpkg/dpkg.cfg.d/90_nolocale
-ADD docker/assets/apt_nocache /etc/apt/apt.conf.d/90_nocache
-ADD docker/assets/apt_mindeps /etc/apt/apt.conf.d/90_mindeps
+ADD assets/dpkg_nodoc /etc/dpkg/dpkg.cfg.d/90_nodoc
+ADD assets/dpkg_nolocale /etc/dpkg/dpkg.cfg.d/90_nolocale
+ADD assets/apt_nocache /etc/apt/apt.conf.d/90_nocache
+ADD assets/apt_mindeps /etc/apt/apt.conf.d/90_mindeps
 
 ARG DEBIAN_FRONTEND=noninteractive
 
