@@ -12,7 +12,6 @@ jobs:
     options:
     container:
       image: "ghcr.io/${{ github.repository }}:latest"
-      options: "--dns 127.0.0.1"
       credentials:
         username: disposable
         password: ${{ secrets.GITHUB_TOKEN }}
@@ -21,7 +20,8 @@ jobs:
         uses: actions/checkout@v3
       - name: Restart unbound
         run: "service unbound restart"
+      - run: "netstat -apn | grep unbound"
       - name: Add missing dependencies
         run: "poetry install"
-      - name: Run script
-        run: "poetry run ./.generate --dns-verify -D --source-map --src 'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912'"
+#      - name: Run script
+#        run: "poetry run ./.generate --dns-verify -D --ns 127.0.0.1 --source-map --src 'https://gist.githubusercontent.com/michenriksen/8710649/raw/d42c080d62279b793f211f0caaffb22f1c980912'"

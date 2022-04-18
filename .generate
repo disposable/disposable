@@ -473,16 +473,21 @@ class disposableHostGenerator():
         return False
 
     @staticmethod
-    def fetchMX(domain: str) -> tuple:
+    def fetchMX(domain: str, nameservers: list = []) -> tuple:
         """Check if given domain has a valid MX entry
 
         :param domain: domain name to validate
         :type domain: str
+        :param nameservers: list of nameservers to use for resolve
+        :type nameservers: list
         :return: tuple (domain name, bool valid)
         :rtype: tuple
         """
         resolver = dns.resolver.Resolver()
         resolver.lifetime = resolver.timeout = 20.0
+
+        if nameservers:
+            resolver.nameservers = nameservers
 
         valid = False
         try:
@@ -533,7 +538,7 @@ class disposableHostGenerator():
         self.no_mx = []
         if self.options.get('dns_verify'):
             with concurrent.futures.ThreadPoolExecutor(max_workers=80) as executor:
-                futures = [executor.submit(disposableHostGenerator.fetchMX, domain) for domain in self.domains]
+                futures = [executor.submit(disposableHostGenerator.fetchMX, domain, self.options.get('nameservers')) for domain in self.domains]
                 for future in concurrent.futures.as_completed(futures):
                     (domain, valid) = future.result()
                     if not valid:
@@ -620,6 +625,7 @@ if __name__ == '__main__':
     parser.add_argument('-D', '--debug', action='store_true', dest='debug', help='show debug output and exit on warn/error')
     parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
     parser.add_argument('--max-retry', dest='max_retry', help='maximum count of retries to fetch an url', default=25)
+    parser.add_argument('--ns', action='append', dest='nameservers', help='set custom resolver for dns-verify')
     options = parser.parse_args()
 
     dhg = disposableHostGenerator(vars(options))

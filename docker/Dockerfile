@@ -14,3 +14,5 @@ RUN	set -e \
     && pip3 install poetry \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* /var/tmp/* /var/log/*
+
+ADD docker/assets/unbound-listener.conf /etc/unbound/unbound.conf.d/listener.conf
