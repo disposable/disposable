@@ -509,7 +509,9 @@ class disposableHostGenerator():
         """
         # fetch remove data
         for source in self.sources:
-            if self.options.get('src_filter') is not None and source.get('src') != self.options.get('src_filter'):
+            if source['src'] not in 'whitelist_file' and \
+               self.options.get('src_filter') is not None and \
+               source['src'] != self.options.get('src_filter'):
                 continue
 
             try:
