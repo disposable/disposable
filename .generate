@@ -635,8 +635,7 @@ class disposableHostGenerator():
         if self.options.get('source_map'):
             with open(self.out_file + '_source_map.txt', 'w') as ff:
                 for (src_url, source_map_domains) in sorted(self.source_map.items()):
-                    source_map_domains.sort()
-                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(source_map_domains) + "\n")
+                    ff.write(src_url + ':' + ('\n%s:' % src_url).join(sorted(source_map_domains)) + "\n")
 
         if self.no_mx:
             domains_with_mx = self.domains
