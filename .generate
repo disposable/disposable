@@ -427,8 +427,6 @@ class disposableHostGenerator():
             (_, domain) = line.decode('utf8').split('@', 1)
             lines.append(domain)
 
-        logging.info(lines)
-
         return lines
 
     def readFiles(self):
