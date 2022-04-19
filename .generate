@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from typing import Any, Union
+import functools
 import json
 import re
 import urllib.request
@@ -22,19 +23,19 @@ class remoteData():
     retry_errors_re = re.compile(r"""(The read operation timed out|urlopen error timed out)""", re.I)
 
     @staticmethod
-    def fetchFile(src: str) -> list:
+    def fetchFile(src: str) -> str:
         """Read local file
 
         :param src: filename
         :type src: str
-        :return: list of entries
-        :rtype: list
+        :return: data of entries
+        :rtype: str
         """
         try:
             with open(src, 'rb') as f:
-                return [line.strip().decode('utf8') for line in f]
+                return f.read()
         except IOError:
-            return []
+            return ''
 
     @staticmethod
     def fetchWS(src: str) -> str:
@@ -136,8 +137,7 @@ class disposableHostGenerator():
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/daisy1754/jp-disposable-emails/master/list.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt'},
         {'type': 'json', 'src': 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'},
-        # temp-mail.org crawler buggy
-        # {'type': 'json', 'src': 'https://web2.temp-mail.org/request/domains/format/json'},
+        {'type': 'json', 'src': 'https://mob1.temp-mail.org/request/domains/format/json'},
         {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
         {'type': 'json', 'src': 'https://www.fakemail.net/index/index', 'scrape': True},
         {'type': 'json', 'src': 'https://api.disposablemailbox.com/domains'},
@@ -250,7 +250,13 @@ class disposableHostGenerator():
             return list(filter(lambda line: line and isinstance(line, str), raw))
 
         if fmt in ('whitelist', 'list', 'file', 'whitelist_file'):
-            return [line.decode(source.get('encoding', 'utf-8')) for line in data.splitlines()]
+            lines = []
+            for line in data.splitlines():
+                line = line.decode(source.get('encoding', 'utf-8')).strip()
+                if line.startswith('#') or line == '':
+                    continue
+                lines.append(line)
+            return lines
 
         if fmt == 'html':
             raw = data.decode(source.get('encoding', 'utf-8'))
@@ -476,6 +482,38 @@ class disposableHostGenerator():
         return False
 
     @staticmethod
+    @functools.lru_cache(maxsize=1024*1024)
+    def resolveDNS(resolver: dns.resolver.Resolver, host: str, type_id: int) -> Union[None, str, dns.resolver.Answer]:
+        """Resolve given hostname against given resolver and return error or result
+
+        :param resolver: Resolver to use
+        :type resolver: dns.resolver.Resolver
+        :param host: hostname to resolve
+        :type host: str
+        :param type_id: Type of request
+        :type type_id: int
+        :return: Str or None on error, or dns answer object
+        :rtype: Union[None, dns.resolver.Answer, str]
+        """
+        r = None
+        try:
+            r = resolver.query(host, type_id)
+        except KeyboardInterrupt:
+            raise
+        except dns.resolver.NXDOMAIN:
+            return 'resolved but no entry'
+        except dns.resolver.NoNameservers:
+            return 'answer refused'
+        except dns.resolver.NoAnswer:
+            return 'no answer section'
+        except dns.exception.Timeout:
+            return 'timeout'
+        except Exception as e:
+            pass
+
+        return r
+
+    @staticmethod
     def fetchMX(domain: str, nameservers: list = [], dnsport: int = 53, resolver_timeout: int = 20) -> tuple:
         """Check if given domain has a valid MX entry
 
@@ -497,55 +535,33 @@ class disposableHostGenerator():
         if dnsport:
             resolver.port = dnsport
 
-        valid = False
-        try:
-            r = resolver.query(domain, dns.rdatatype.MX)
-            if not r:
-                return (domain, False)
-            mx_list = {rr.exchange.to_text(rr.exchange).lower() for rr in r.rrset}
-            if '.' in mx_list or mx_list == ['localhost']:
-                return (domain, False)
+        rq = [(domain, dns.rdatatype.MX, 'MX'), ]
 
-            valid = True
-            logging.debug("MX Lookup: %s => %s (%s)", domain, valid, ','.join(mx_list))
-        except KeyboardInterrupt:
-            raise
-        except dns.resolver.NXDOMAIN:
-            logging.debug("MX Lookup: %s - Resolved but no entry", domain)
-        except dns.resolver.NoNameservers:
-            logging.debug("MX Lookup: %s - Answer refused", domain)
-        except dns.resolver.NoAnswer:
-            logging.debug("MX Lookup: %s - No answer section", domain)
-        except dns.exception.Timeout:
-            logging.debug("MX Lookup: %s - Timeout", domain)
-            return (domain, False)
-        except Exception as e:
-            pass
+        while rq:
+            r = None
+            resolve = rq.pop()
+            r = disposableHostGenerator.resolveDNS(resolver, resolve[0], resolve[1])
+            logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], r)
 
-        if not valid:
-            try:
-                r = resolver.query(domain, dns.rdatatype.A)
-                if not r:
-                    return (domain, False)
+            if type(r) is str:
+                r = None
 
-                ips = [a.address for a in r]
-                if '127.0.0.1' not in ips:
-                    valid = True
-                    logging.debug("A Lookup: %s => %s (%s)", domain, valid, ','.join(ips))
-            except KeyboardInterrupt:
-                raise
-            except dns.resolver.NXDOMAIN:
-                logging.debug("A Lookup: %s - Resolved but no entry", domain)
-            except dns.resolver.NoNameservers:
-                logging.debug("A Lookup: %s - Answer refused", domain)
-            except dns.resolver.NoAnswer:
-                logging.debug("A Lookup: %s - No answer section", domain)
-            except dns.exception.Timeout:
-                logging.debug("A Lookup: %s - Timeout", domain)
-                return (domain, False)
-            except Exception as e:
-                pass
-        return (domain, valid)
+            if resolve[1] == dns.rdatatype.MX:
+                mx_list = []
+                if r:
+                    mx_list = {rr.exchange.to_text(rr.exchange).lower() for rr in r.rrset}
+
+                if mx_list:
+                    if ('.' in mx_list or mx_list == ['localhost']):
+                        return (domain, False)
+
+                    rq.extend((x, dns.rdatatype.A, 'A') for x in mx_list)
+                else:
+                    rq.append((domain, dns.rdatatype.A, 'A'))
+            elif r:
+                return (domain, True)
+
+        return (domain, False)
 
     def listSources(self):
         """list all available sources
@@ -556,7 +572,7 @@ class disposableHostGenerator():
     def generate(self):
         """Fetch all data + generate lists
         """
-        # fetch remove data
+        # fetch data from sources
         for source in self.sources:
             if source['src'] not in 'whitelist_file' and \
                self.options.get('src_filter') is not None and \
@@ -574,9 +590,17 @@ class disposableHostGenerator():
         for domain in self.skip:
             try:
                 self.domains.remove(domain)
+            except KeyError:
+                pass
+            try:
                 self.sha1.remove(hashlib.sha1(domain.encode('idna')).hexdigest())
             except KeyError:
-                continue
+                pass
+
+            if self.options.get('dns_verify') and domain not in ('example.com', 'example.org', 'example.net'):
+                r = disposableHostGenerator.fetchMX(domain, self.options.get('nameservers'), self.options.get('dnsport'), self.options.get('dns_timeout', 20))
+                if not r or not r[1]:
+                    logging.warning('Whitelist domain %s does not resolve!', domain)
 
         # MX verify check
         self.no_mx = []
