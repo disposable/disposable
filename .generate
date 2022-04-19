@@ -16,6 +16,7 @@ import dns.exception
 import concurrent.futures
 import logging
 import http.client
+import ssl
 from websocket import create_connection
 
 
@@ -56,7 +57,7 @@ class remoteData():
         return data
 
     @staticmethod
-    def fetchHTTPRaw(url: str, headers: dict = None, timeout: int = 3, max_retry: int = 25) -> Union[http.client.HTTPResponse, None]:
+    def fetchHTTPRaw(url: str, headers: dict = None, timeout: int = 3, max_retry: int = 150) -> Union[http.client.HTTPResponse, None]:
         """Fetch data from HTTP(s) URL and return http object
 
         :param url: URL to call
@@ -74,7 +75,9 @@ class remoteData():
             headers = {}
         retry = 0
         headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0')
-        opener = urllib.request.build_opener()
+        context = ssl._create_unverified_context()
+        sslHandler = urllib.request.HTTPSHandler(context=context)
+        opener = urllib.request.build_opener(sslHandler)
         while retry < max_retry:
             try:
                 req = urllib.request.Request(
@@ -95,7 +98,7 @@ class remoteData():
         return None
 
     @staticmethod
-    def fetchHTTP(url: str, headers: dict = None, timeout: int = 3, max_retry: int = 25) -> bytes:
+    def fetchHTTP(url: str, headers: dict = None, timeout: int = 3, max_retry: int = 150) -> bytes:
         """Fetch data from HTTP(s) URL and return content
 
         :param url: URL to call
@@ -147,6 +150,7 @@ class disposableHostGenerator():
             'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             'scrape': True},
         {'type': 'html', 'src': 'https://www.guerrillamail.com/en/'},
+        {'type': 'html', 'src': 'https://www.trash-mail.com/inbox/'},
         {'type': 'html', 'src': 'https://mail-temp.com',
             'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
         {'type': 'html', 'src': 'https://10minutemail.com/session/address',
@@ -155,6 +159,11 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://fakemailgenerator.net',
             'regex': re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
         {'type': 'html', 'src': 'https://clipmails.com', 'regex': [
+            re.compile(r"""wire:initial-data="(.+?domains[^\"]+)\""""),
+            re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
+            re.compile(r"""\&quot;([^\&]+)\&quot;""")
+        ]},
+        {'type': 'html', 'src': 'https://nospam.today/home', 'regex': [
             re.compile(r"""wire:initial-data="(.+?domains[^\"]+)\""""),
             re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
             re.compile(r"""\&quot;([^\&]+)\&quot;""")
@@ -598,7 +607,8 @@ class disposableHostGenerator():
                 pass
 
             if self.options.get('dns_verify') and domain not in ('example.com', 'example.org', 'example.net'):
-                r = disposableHostGenerator.fetchMX(domain, self.options.get('nameservers'), self.options.get('dnsport'), self.options.get('dns_timeout', 20))
+                r = disposableHostGenerator.fetchMX(domain, self.options.get(
+                    'nameservers'), self.options.get('dnsport'), self.options.get('dns_timeout', 20))
                 if not r or not r[1]:
                     logging.warning('Whitelist domain %s does not resolve!', domain)
 
@@ -631,6 +641,8 @@ class disposableHostGenerator():
             logging.info('Fetched %s domains and %s hashes', len(self.domains), len(self.sha1))
             if self.options.get('dns_verify'):
                 logging.info(' - %s domain(s) have no MX', len(self.no_mx))
+                if self.options.get('list_no_mx'):
+                    logging.info('No MX: %s', self.no_mx)
             logging.info(' - %s domain(s) added', len(added))
             logging.info(' - %s domain(s) removed', len(removed))
             logging.info(' - %s hash(es) added', len(added_sha1))
@@ -692,15 +704,17 @@ if __name__ == '__main__':
     parser.add_argument('--src', dest='src_filter', help='only request entries for given source')
     parser.add_argument('-q', '--quiet', action='store_false', dest='verbose', help='hide verbose output')
     parser.add_argument('-D', '--debug', action='store_true', dest='debug', help='show debug output and exit on warn/error')
-    parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
-    parser.add_argument('--max-retry', type=int, dest='max_retry', help='maximum count of retries to fetch an url', default=25)
+    parser.add_argument('--max-retry', type=int, dest='max_retry',
+                        help='maximum count of retries to fetch an url, default: 150', default=150)
     parser.add_argument('--dns-threads', type=int, dest='dns_threads',
-                        help='count of threads to use for dns resolving', default=80)
-    parser.add_argument('--dns-timeout', type=int, dest="dns_timeout", help='timeout for dns request', default=20.0)
+                        help='count of threads to use for dns resolving, default:10', default=10)
+    parser.add_argument('--dns-timeout', type=int, dest="dns_timeout", help='timeout for dns request, default: 20', default=20.0)
     parser.add_argument('--ns', action='append', dest='nameservers', help='set custom resolver for dns-verify')
     parser.add_argument('--dnsport', type=int, dest='dnsport', help='set custom resolver port for dns-verify')
-    options = parser.parse_args()
+    parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
+    parser.add_argument('--list-no-mx', action='store_true', dest='list_no_mx', help='list domains without valid mx')
 
+    options = parser.parse_args()
     dhg = disposableHostGenerator(vars(options))
     if options.list_sources:
         dhg.listSources()
