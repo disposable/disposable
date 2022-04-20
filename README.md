@@ -1,4 +1,4 @@
-# Disposable email domains 🗑
+# 🗑 Disposable email domains
 
 [![npm](https://badge.fury.io/js/disposable-email.svg)](https://www.npmjs.com/package/disposable-email)
 [![GoDoc](https://godoc.org/github.com/disposable/disposable?status.svg)](https://godoc.org/github.com/disposable/disposable)
@@ -11,7 +11,7 @@ Use it to validate email addresses on sign up, or just to see how many real emai
 
 ## Usage
 
-* list
+### List
 
 A [file](https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt)
 containing a sorted list of domains, one per line.
@@ -20,7 +20,7 @@ containing a sorted list of domains, one per line.
 curl https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.txt
 ```
 
-* JSON array
+### JSON array
 
 A [file](https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.json)
 containing a sorted array of domains, in JSON format.
@@ -29,7 +29,7 @@ containing a sorted array of domains, in JSON format.
 curl https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains.json
 ```
 
-* javascript
+### JavaScript
 
 Install the npm package `disposable-email`. Validate synchronously or with a callback.
 
@@ -51,7 +51,7 @@ disposable.validate('gmail.com', console.log);
 // null true
 ```
 
-* Go
+### Go
 
 ```go
 import "github.com/disposable/disposable"
@@ -91,18 +91,18 @@ Fetched 5196 domains and 6593 hashes
 
 ## Credits
 
-- @adamloving
-- @michenriksen
-- @ivolo
-- @smeinecke
-- @GeroldSetz
-- @martenson
-- @FGRibreau
-- @daisy1754
-- @jamesonev
-- @wesbos
-- @willwhite
-- @stopforumspam
+[@adamloving](https://github.com/adamloving)
+[@michenriksen](https://github.com/michenriksen)
+[@ivolo](https://github.com/ivolo)
+[@smeinecke](https://github.com/smeinecke)
+[@GeroldSetz](https://github.com/GeroldSetz)
+[@martenson](https://github.com/martenson)
+[@FGRibreau](https://github.com/FGRibreau)
+[@daisy1754](https://github.com/daisy1754)
+[@jamesonev](https://github.com/jamesonev)
+[@wesbos](https://github.com/wesbos)
+[@willwhite](https://github.com/willwhite)
+[@stopforumspam](https://github.com/stopforumspam)
 
 ### CDN
 
