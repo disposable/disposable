@@ -17,6 +17,7 @@ import concurrent.futures
 import logging
 import http.client
 import ssl
+import ipaddress
 from websocket import create_connection
 
 
@@ -24,19 +25,27 @@ class remoteData():
     retry_errors_re = re.compile(r"""(The read operation timed out|urlopen error timed out)""", re.I)
 
     @staticmethod
-    def fetchFile(src: str) -> str:
+    def fetchFile(src: str, ignore_errors: bool = False) -> bytes:
         """Read local file
 
         :param src: filename
         :type src: str
+        :param ignore_errors: ignore file errors / file does not exist
+        :type ignore_errors: bool
         :return: data of entries
         :rtype: str
         """
         try:
             with open(src, 'rb') as f:
                 return f.read()
-        except IOError:
-            return ''
+        except FileNotFoundError as e:
+            if ignore_errors:
+                return b''
+            raise e
+        except IOError as e:
+            if ignore_errors:
+                return b''
+            raise e
 
     @staticmethod
     def fetchWS(src: str) -> str:
@@ -125,7 +134,7 @@ class disposableHostGenerator():
     sources = [
         # whitelist has to be loaded first!
         {'type': 'whitelist', 'src': 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt'},
-        {'type': 'whitelist_file', 'src': 'whitelist.txt'},
+        {'type': 'whitelist_file', 'src': 'whitelist.txt', 'ignore_not_exists': True},
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/adamloving/4401361/raw/'},
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/michenriksen/8710649/raw/'},
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/smeinecke/78b229031cc885a776c8b84c56e1c5ee/raw/'},
@@ -144,7 +153,7 @@ class disposableHostGenerator():
         {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
         {'type': 'json', 'src': 'https://www.fakemail.net/index/index', 'scrape': True},
         {'type': 'json', 'src': 'https://api.disposablemailbox.com/domains'},
-        {'type': 'file', 'src': 'blacklist.txt'},
+        {'type': 'file', 'src': 'blacklist.txt', 'ignore_not_exists': True},
         {'type': 'sha1', 'src': 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt'},
         {'type': 'html', 'src': 'https://emailfake.com',
             'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
@@ -207,7 +216,7 @@ class disposableHostGenerator():
         :rtype: Any
         """
         if source.get('type') in ('file', 'whitelist_file'):
-            return remoteData.fetchFile(source.get('src'))
+            return remoteData.fetchFile(source.get('src'), source.get('ignore_not_exists'))
         elif source.get('type') == 'custom':
             return getattr(self, "_process%s" % source.get('src'))()
         elif source.get('type') == 'ws':
@@ -523,7 +532,7 @@ class disposableHostGenerator():
         return r
 
     @staticmethod
-    def fetchMX(domain: str, nameservers: list = [], dnsport: int = 53, resolver_timeout: int = 20) -> tuple:
+    def fetchMX(domain: str, nameservers: list = None, dnsport: int = 53, resolver_timeout: int = 20) -> tuple:
         """Check if given domain has a valid MX entry
 
         :param domain: domain name to validate
@@ -535,6 +544,8 @@ class disposableHostGenerator():
         :return: tuple (domain name, bool valid)
         :rtype: tuple
         """
+        if nameservers is None:
+            nameservers = []
         resolver = dns.resolver.Resolver()
         resolver.lifetime = resolver.timeout = resolver_timeout
 
@@ -547,7 +558,6 @@ class disposableHostGenerator():
         rq = [(domain, dns.rdatatype.MX, 'MX'), ]
 
         while rq:
-            r = None
             resolve = rq.pop()
             r = disposableHostGenerator.resolveDNS(resolver, resolve[0], resolve[1])
             logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], r)
@@ -568,7 +578,21 @@ class disposableHostGenerator():
                 else:
                     rq.append((domain, dns.rdatatype.A, 'A'))
             elif r:
-                return (domain, True)
+                invalid_ip = False
+                for _r in r:
+                    _ipr = None
+                    try:
+                        _ipr = ipaddress.ip_address(_r.address)
+                    except Exception:
+                        invalid_ip = True
+                        break
+
+                    if not _ipr or _ipr.is_private or _ipr.is_reserved or _ipr.is_loopback or _ipr.is_multicast:
+                        invalid_ip = True
+                        break
+
+                if not invalid_ip:
+                    return (domain, True)
 
         return (domain, False)
 
@@ -581,6 +605,17 @@ class disposableHostGenerator():
     def generate(self):
         """Fetch all data + generate lists
         """
+        if self.options.get('whitelist'):
+            self.sources.insert(0, {
+                'type': 'whitelist_file',
+                'src': self.options.get('whitelist')
+            })
+        if self.options.get('file'):
+            self.sources.insert(0, {
+                'type': 'file',
+                'src': self.options.get('file')
+            })
+
         # fetch data from sources
         for source in self.sources:
             if source['src'] not in 'whitelist_file' and \
@@ -713,6 +748,9 @@ if __name__ == '__main__':
     parser.add_argument('--dnsport', type=int, dest='dnsport', help='set custom resolver port for dns-verify')
     parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
     parser.add_argument('--list-no-mx', action='store_true', dest='list_no_mx', help='list domains without valid mx')
+    parser.add_argument('--whitelist', dest='whitelist',
+                        help='custom whitelist to load - all domains listed in that file are ignored in blacklist')
+    parser.add_argument('--file', dest='file', help='custom file to load - add custom domains to local result')
 
     options = parser.parse_args()
     dhg = disposableHostGenerator(vars(options))
