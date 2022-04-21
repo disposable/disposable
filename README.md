@@ -5,6 +5,10 @@
 
 A collection of domains for disposable email services like [10MinuteMail](http://10minutemail.com) and [GuerrillaMail](https://www.guerrillamail.com). Also, some 🛠 to make your life easier.
 
+## Contributions
+
+**If you are already familiar with the topic or have good suggestions for automating the crawling processes, feel free to open an [issue](https://github.com/disposable/disposable/issues/new). We are also looking for people to maintain this project or implement additional pages.**
+
 ## Why?
 
 Use it to validate email addresses on sign up, or just to see how many real email addresses you have in your system.
