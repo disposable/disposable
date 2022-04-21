@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from ast import parse
 from typing import Any, Union
 import functools
 import json
@@ -132,9 +133,6 @@ class disposableHostGenerator():
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
 
     sources = [
-        # whitelist has to be loaded first!
-        {'type': 'whitelist', 'src': 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt'},
-        {'type': 'whitelist_file', 'src': 'whitelist.txt', 'ignore_not_exists': True},
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/adamloving/4401361/raw/'},
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/michenriksen/8710649/raw/'},
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/'},
@@ -197,6 +195,12 @@ class disposableHostGenerator():
     ]
 
     def __init__(self, options: dict = None, out_file: str = None):
+        self.options = options or {}
+        log_level = logging.INFO if self.options.get('verbose') else logging.WARN
+        if self.options.get('debug'):
+            log_level = logging.DEBUG
+        logging.basicConfig(format="%(levelname)s: %(message)s", level=log_level)
+
         self.no_mx = set()
         self.domains = set()
         self.sha1 = set()
@@ -206,12 +210,27 @@ class disposableHostGenerator():
         self.source_map = {}
         self.skip = set()
         self.scrape = set()
-        self.options = options or {}
         self.out_file = 'domains' if out_file is None else out_file
-        log_level = logging.INFO if self.options.get('verbose') else logging.WARN
-        if self.options.get('debug'):
-            log_level = logging.DEBUG
-        logging.basicConfig(format="%(levelname)s: %(message)s", level=log_level)
+
+        if self.options.get('file'):
+            self.sources.insert(0, {
+                'type': 'file',
+                'src': self.options['file']
+            })
+
+        # load remote URL if no custom list is defined
+        if self.options.get('whitelist') is None:
+            self.sources.insert(0, {
+                'type': 'whitelist',
+                'src': 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt'
+            })
+            self.options['whitelist'] = 'whitelist.txt'
+
+        self.sources.insert(0, {
+            'type': 'whitelist_file',
+            'src': self.options.get('whitelist'),
+            'ignore_not_exists': self.options.get('whitelist') != 'whitelist.txt'
+        })
 
     def _fetchData(self, source: dict) -> Any:
         """Fetch remote data for given source
@@ -616,17 +635,6 @@ class disposableHostGenerator():
     def generate(self):
         """Fetch all data + generate lists
         """
-        if self.options.get('whitelist'):
-            self.sources.insert(0, {
-                'type': 'whitelist_file',
-                'src': self.options.get('whitelist')
-            })
-        if self.options.get('file'):
-            self.sources.insert(0, {
-                'type': 'file',
-                'src': self.options.get('file')
-            })
-
         # fetch data from sources
         for source in self.sources:
             if source['src'] not in 'whitelist_file' and \
