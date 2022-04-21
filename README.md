@@ -75,18 +75,20 @@ Fetched 5196 domains and 6593 hashes
 ```
 
 ## External Sources:
-- https://gist.githubusercontent.com/adamloving/4401361/
-- https://gist.githubusercontent.com/michenriksen/8710649/
-- https://gist.githubusercontent.com/smeinecke/78b229031cc885a776c8b84c56e1c5ee/
-- https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/
-- https://github.com/wesbos/burner-email-providers/
-- https://github.com/GeroldSetz/emailondeck.com-domains/
-- https://github.com/willwhite/freemail/
-- https://github.com/stopforumspam/disposable_email_domains/
-- https://github.com/martenson/disposable-email-domains/
-- https://github.com/daisy1754/jp-disposable-emails/
-- https://github.com/FGRibreau/mailchecker/
-- https://github.com/ivolo/disposable-email-domains/
+|Source|Status|
+|------|--:|
+|https://gist.githubusercontent.com/adamloving/4401361/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F4401361)|
+|https://gist.githubusercontent.com/michenriksen/8710649/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F8710649)|
+|https://gist.githubusercontent.com/smeinecke/78b229031cc885a776c8b84c56e1c5ee/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F78b229031cc885a776c8b84c56e1c5ee)|
+|https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F7e188c35fd5ca754c970e3a1caf045ef)|
+|https://github.com/wesbos/burner-email-providers/|![GitHub last commit](https://img.shields.io/github/last-commit/wesbos/burner-email-providers)|
+|https://github.com/GeroldSetz/emailondeck.com-domains/| ![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/emailondeck.com-domains) |
+|https://github.com/willwhite/freemail/|![GitHub last commit](https://img.shields.io/github/last-commit/willwhite/freemail)|
+|https://github.com/stopforumspam/disposable_email_domains/|![GitHub last commit](https://img.shields.io/github/last-commit/stopforumspam/disposable_email_domains)|
+|https://github.com/martenson/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/martenson/disposable-email-domains)|
+|https://github.com/daisy1754/jp-disposable-emails/|![GitHub last commit](https://img.shields.io/github/last-commit/daisy1754/jp-disposable-emails)|
+|https://github.com/FGRibreau/mailchecker/|![GitHub last commit](https://img.shields.io/github/last-commit/FGRibreau/mailchecker)|
+|https://github.com/ivolo/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/ivolo/disposable-email-domains)|
 
 
 ## Credits
@@ -106,8 +108,7 @@ Fetched 5196 domains and 6593 hashes
 
 ### CDN
 
-Production: https://rawcdn.githack.com/disposable/disposable-email-domains/master/domains.json
-
-Development: https://raw.githack.com/disposable/disposable-email-domains/master/domains.json
+* Production: https://rawcdn.githack.com/disposable/disposable-email-domains/master/domains.json
+* Development: https://raw.githack.com/disposable/disposable-email-domains/master/domains.json
 
 by: https://raw.githack.com/
