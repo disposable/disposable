@@ -77,10 +77,10 @@ Fetched 5196 domains and 6593 hashes
 ## External Sources:
 |Source|Status|
 |------|--:|
-|https://gist.githubusercontent.com/adamloving/4401361/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F4401361)|
-|https://gist.githubusercontent.com/michenriksen/8710649/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F8710649)|
-|https://gist.githubusercontent.com/smeinecke/78b229031cc885a776c8b84c56e1c5ee/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F78b229031cc885a776c8b84c56e1c5ee)|
-|https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F7e188c35fd5ca754c970e3a1caf045ef)|
+|https://gist.github.com/adamloving/4401361/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F4401361&cacheSeconds=3600)|
+|https://gist.github.com/michenriksen/8710649/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F8710649&cacheSeconds=3600)|
+|https://gist.github.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F7e188c35fd5ca754c970e3a1caf045ef&cacheSeconds=3600)|
+|https://github.com/disposable/static-disposable-lists/|![GitHub last commit](https://img.shields.io/github/last-commit/disposable/static-disposable-lists)|
 |https://github.com/wesbos/burner-email-providers/|![GitHub last commit](https://img.shields.io/github/last-commit/wesbos/burner-email-providers)|
 |https://github.com/GeroldSetz/emailondeck.com-domains/| ![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/emailondeck.com-domains) |
 |https://github.com/willwhite/freemail/|![GitHub last commit](https://img.shields.io/github/last-commit/willwhite/freemail)|
