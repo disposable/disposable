@@ -155,6 +155,11 @@ class disposableHostGenerator():
         {'type': 'json', 'src': 'https://api.disposablemailbox.com/domains'},
         {'type': 'file', 'src': 'blacklist.txt', 'ignore_not_exists': True},
         {'type': 'sha1', 'src': 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt'},
+        {
+            'type': 'html',
+            'src': 'https://www.rotvpn.com/en/disposable-email',
+            'regex': re.compile(r"""<div class=\"container text-center\">\s+<div[^>]+>(.+?)</div>\s+</div>""", re.I | re.DOTALL)
+        },
         {'type': 'html', 'src': 'https://emailfake.com',
             'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             'scrape': True},
