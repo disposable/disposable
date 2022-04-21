@@ -560,9 +560,9 @@ class disposableHostGenerator():
         while rq:
             resolve = rq.pop()
             r = disposableHostGenerator.resolveDNS(resolver, resolve[0], resolve[1])
-            logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], r)
 
             if type(r) is str:
+                logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], r)
                 r = None
 
             if resolve[1] == dns.rdatatype.MX:
@@ -570,6 +570,7 @@ class disposableHostGenerator():
                 if r:
                     mx_list = {rr.exchange.to_text(rr.exchange).lower() for rr in r.rrset}
 
+                logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], mx_list)
                 if mx_list:
                     if ('.' in mx_list or mx_list == ['localhost']):
                         return (domain, False)
@@ -579,9 +580,11 @@ class disposableHostGenerator():
                     rq.append((domain, dns.rdatatype.A, 'A'))
             elif r:
                 invalid_ip = False
+                ips = []
                 for _r in r:
                     _ipr = None
                     try:
+                        ips.append(_r.address)
                         _ipr = ipaddress.ip_address(_r.address)
                     except Exception:
                         invalid_ip = True
@@ -590,6 +593,8 @@ class disposableHostGenerator():
                     if not _ipr or _ipr.is_private or _ipr.is_reserved or _ipr.is_loopback or _ipr.is_multicast:
                         invalid_ip = True
                         break
+
+                logging.debug("%20s: resolved %20s (%2s): %s (invalid: %s)", domain, resolve[0], resolve[2], ips, invalid_ip)
 
                 if not invalid_ip:
                     return (domain, True)
