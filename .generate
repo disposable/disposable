@@ -127,7 +127,7 @@ class remoteData():
 
 
 class disposableHostGenerator():
-    domain_regex = re.compile(r'^[a-z\d-]{,63}(\.[a-z-]{,63})+$')
+    domain_regex = re.compile(r'^[a-z\d-]{1,63}(\.[a-z-\.]{2,63})+$')
     domain_search_regex = re.compile(r'["\']([a-z\d-]{,63}\.[a-z\-]{,63})["\']')
     html_generic_re = re.compile(r"""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
