@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-from ast import parse
-from typing import Any, Union
+from typing import Any, Union, Tuple
 import functools
 import json
 import re
@@ -67,7 +66,7 @@ class remoteData():
         return data
 
     @staticmethod
-    def fetchHTTPRaw(url: str, headers: dict = None, timeout: int = 3, max_retry: int = 150) -> Union[http.client.HTTPResponse, None]:
+    def fetchHTTPRaw(url: str, headers: Union[dict, None] = None, timeout: int = 3, max_retry: int = 150) -> Union[http.client.HTTPResponse, None]:
         """Fetch data from HTTP(s) URL and return http object
 
         :param url: URL to call
@@ -108,7 +107,7 @@ class remoteData():
         return None
 
     @staticmethod
-    def fetchHTTP(url: str, headers: dict = None, timeout: int = 3, max_retry: int = 150) -> bytes:
+    def fetchHTTP(url: str, headers: Union[dict, None] = None, timeout: int = 3, max_retry: int = 150) -> bytes:
         """Fetch data from HTTP(s) URL and return content
 
         :param url: URL to call
@@ -128,7 +127,7 @@ class remoteData():
 
 class disposableHostGenerator():
     domain_regex = re.compile(r'^[a-z\d-]{1,63}(\.[a-z-\.]{2,63})+$')
-    domain_search_regex = re.compile(r'["\']([a-z\d-]{,63}\.[a-z\-]{,63})["\']')
+    domain_search_regex = re.compile(r'["\'\s>]([a-z\d\.-]{1,63}\.[a-z\-]{2,63})["\'\s<]', re.I)
     html_generic_re = re.compile(r"""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)
     sha1_regex = re.compile(r'^[a-fA-F0-9]{40}')
 
@@ -147,6 +146,7 @@ class disposableHostGenerator():
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt'},
         {'type': 'json', 'src': 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/7c/fakefilter/main/txt/data.txt'},
+        {'type': 'list', 'src': 'https://f.hubspotusercontent40.net/hubfs/2832391/Marketing/Lead-Capture/free-domains-2.csv'},
         {'type': 'list', 'src': 'https://getnada.com/api/v1/domains'},
         {'type': 'json', 'src': 'https://mob1.temp-mail.org/request/domains/format/json'},
         {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
@@ -157,7 +157,10 @@ class disposableHostGenerator():
         {
             'type': 'html',
             'src': 'https://www.rotvpn.com/en/disposable-email',
-            'regex': re.compile(r"""<div class=\"container text-center\">\s+<div[^>]+>(.+?)</div>\s+</div>""", re.I | re.DOTALL)
+            'regex': [
+                re.compile(r"""<div class=\"container text-center\">\s+<div[^>]+>(.+?)</div>\s+</div>""", re.I | re.DOTALL),
+                domain_search_regex
+            ]
         },
         {'type': 'html', 'src': 'https://emailfake.com',
             'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
@@ -194,12 +197,14 @@ class disposableHostGenerator():
         {'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
     ]
 
-    def __init__(self, options: dict = None, out_file: str = None):
+    def __init__(self, options: Union[dict, None] = None, out_file: Union[str, None] = None):
         self.options = options or {}
         log_level = logging.INFO if self.options.get('verbose') else logging.WARN
         if self.options.get('debug'):
             log_level = logging.DEBUG
         logging.basicConfig(format="%(levelname)s: %(message)s", level=log_level)
+        logger = logging.getLogger('tldextract')
+        logger.setLevel('WARNING')
 
         self.no_mx = set()
         self.domains = set()
@@ -334,7 +339,7 @@ class disposableHostGenerator():
 
         return False
 
-    def _postProcessData(self, source: dict, data: Union[bytes, str], lines: list) -> int:
+    def _postProcessData(self, source: dict, data: Union[bytes, str], lines: list) -> Union[bool, Tuple[int, int]]:
         """Post process data returned by preProcess method
 
         :param source: source dict
@@ -381,10 +386,13 @@ class disposableHostGenerator():
                 self.scrape.add(host)
                 added_scrape_domains += 1
 
-        if source.get('scrape'):
-            return added_scrape_domains
+        if lines_filtered:
+            logging.debug("Example domain: %s", lines_filtered[0])
 
-        return added_domains
+        if source.get('scrape'):
+            return added_scrape_domains, len(lines_filtered)
+
+        return added_domains, len(lines_filtered)
 
     def process(self, source: dict) -> bool:
         """Fetch data of given source and process
@@ -397,7 +405,7 @@ class disposableHostGenerator():
         logging.info("Process %s (%s)", source['src'], source['type'])
 
         max_scrape = 80
-        scrape_max_retry = 8
+        scrape_max_retry = 3
         scrape_count = 0
         self.scrape = set()
         scrape_retry = 0
@@ -413,11 +421,13 @@ class disposableHostGenerator():
             if type(lines) is bool:
                 return lines
 
-            processed_entries = self._postProcessData(source, data, lines)
-            if type(processed_entries) is bool:
-                return processed_entries
+            res = self._postProcessData(source, data, lines)
+            if type(res) is bool:
+                return res
 
-            logging.debug('Processed %s entries', processed_entries)
+            (processed_entries, found_entries) = res
+
+            logging.debug('Processed %s entries (%s found)', processed_entries, found_entries)
             if source.get('scrape'):
                 if processed_entries:
                     scrape_retry = 0
