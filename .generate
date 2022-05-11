@@ -234,7 +234,7 @@ class disposableHostGenerator():
         self.sources.insert(0, {
             'type': 'whitelist_file',
             'src': self.options.get('whitelist'),
-            'ignore_not_exists': self.options.get('whitelist') != 'whitelist.txt'
+            'ignore_not_exists': self.options.get('whitelist') == 'whitelist.txt'
         })
 
     def _fetchData(self, source: dict) -> Any:
