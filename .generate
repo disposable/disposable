@@ -150,7 +150,7 @@ class disposableHostGenerator():
         {'type': 'json', 'src': 'https://mob1.temp-mail.org/request/domains/format/json'},
         {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
         {'type': 'json', 'src': 'https://www.fakemail.net/index/index', 'scrape': True},
-        {'type': 'json', 'src': 'https://api.disposablemailbox.com/domains'},
+        {'type': 'json', 'src': 'https://api.mailpoof.com/domains'},
         {'type': 'file', 'src': 'blacklist.txt', 'ignore_not_exists': True},
         {'type': 'sha1', 'src': 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt'},
         {
