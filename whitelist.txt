@@ -112,3 +112,6 @@ workmail.co.za
 
 # https://github.com/disposable/disposable/issues/89
 asics.com
+
+# https://github.com/disposable/disposable/issues/94
+lendscape.com
