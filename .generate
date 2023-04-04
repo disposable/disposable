@@ -172,11 +172,6 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://correotemporal.org', 'regex': domain_search_regex},
         {'type': 'html', 'src': 'https://fakemailgenerator.net',
             'regex': re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
-        {'type': 'html', 'src': 'https://clipmails.com', 'regex': [
-            re.compile(r"""wire:initial-data="(.+?domains[^\"]+)\""""),
-            re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
-            re.compile(r"""\&quot;([^\&]+)\&quot;""")
-        ]},
         {'type': 'html', 'src': 'https://nospam.today/home', 'regex': [
             re.compile(r"""wire:initial-data="(.+?domains[^\"]+)\""""),
             re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
