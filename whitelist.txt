@@ -115,3 +115,6 @@ asics.com
 
 # https://github.com/disposable/disposable/issues/94
 lendscape.com
+
+# https://github.com/disposable/disposable/issues/97
+mozmail.com
