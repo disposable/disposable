@@ -133,7 +133,6 @@ class disposableHostGenerator():
 
     sources = [
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/adamloving/4401361/raw/'},
-        {'type': 'list', 'src': 'https://gist.githubusercontent.com/michenriksen/8710649/raw/'},
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/disposable/static-disposable-lists/master/mail-data-hosts-net.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt'},
@@ -173,11 +172,6 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://correotemporal.org', 'regex': domain_search_regex},
         {'type': 'html', 'src': 'https://fakemailgenerator.net',
             'regex': re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
-        {'type': 'html', 'src': 'https://clipmails.com', 'regex': [
-            re.compile(r"""wire:initial-data="(.+?domains[^\"]+)\""""),
-            re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
-            re.compile(r"""\&quot;([^\&]+)\&quot;""")
-        ]},
         {'type': 'html', 'src': 'https://nospam.today/home', 'regex': [
             re.compile(r"""wire:initial-data="(.+?domains[^\"]+)\""""),
             re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
