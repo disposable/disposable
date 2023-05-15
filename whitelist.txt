@@ -120,4 +120,8 @@ lendscape.com
 mozmail.com
 
 # French university, e.g. <first>.<last-name>@2028.icam.fr
+# https://github.com/disposable/disposable/pull/104
 icam.fr
+
+# https://github.com/disposable/disposable/issues/103
+nus.edu.sg
