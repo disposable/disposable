@@ -109,6 +109,8 @@ web.de
 webmail.co.za
 websurfer.co.za
 workmail.co.za
+# https://github.com/disposable/disposable/issues/106
+myyahoo.com
 
 # https://github.com/disposable/disposable/issues/89
 asics.com
