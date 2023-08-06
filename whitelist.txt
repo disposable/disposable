@@ -127,3 +127,6 @@ icam.fr
 
 # https://github.com/disposable/disposable/issues/103
 nus.edu.sg
+
+# Swiss Company
+swatch.com
