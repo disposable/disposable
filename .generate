@@ -145,6 +145,7 @@ class disposableHostGenerator():
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt'},
         {'type': 'json', 'src': 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/7c/fakefilter/main/txt/data.txt'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/flotwig/disposable-email-addresses/master/domains.txt'},
         {'type': 'list', 'src': 'https://getnada.com/api/v1/domains'},
         {'type': 'json', 'src': 'https://mob1.temp-mail.org/request/domains/format/json'},
         {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
