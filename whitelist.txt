@@ -130,3 +130,6 @@ nus.edu.sg
 
 # Swiss Company
 swatch.com
+
+# Cloud Service
+ubicloud.com
