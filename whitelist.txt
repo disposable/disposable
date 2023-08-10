@@ -131,5 +131,8 @@ nus.edu.sg
 # Swiss Company
 swatch.com
 
-# Cloud Service
+# Cloud Service - https://github.com/ivolo/disposable-email-domains/pull/965
 ubicloud.com
+
+# Personal domain - https://github.com/ivolo/disposable-email-domains/pull/938
+ruffrey.com
