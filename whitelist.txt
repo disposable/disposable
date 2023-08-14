@@ -134,5 +134,17 @@ swatch.com
 # Cloud Service - https://github.com/ivolo/disposable-email-domains/pull/965
 ubicloud.com
 
+# yahoo local domains - https://github.com/flotwig/disposable-email-addresses/pull/3
+yahoo.com.ph
+yahoo.com.vn
+test.de
+home.de
+mail.htl22.at
+nus.edu.sg
+ukr.net
+
 # Personal domain - https://github.com/ivolo/disposable-email-domains/pull/938
 ruffrey.com
+
+# onet.pl domain - https://github.com/disposable/disposable/issues/117
+amorki.pl
