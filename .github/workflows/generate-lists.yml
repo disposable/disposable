@@ -24,4 +24,4 @@ jobs:
       - name: Add missing dependencies
         run: "poetry install"
       - name: Run script
-        run: "poetry run ./.generate -D --ns 127.0.0.1 --dnsport 5335 --source-map --src 'https://getnada.com/api/v1/domains'"
+        run: "poetry run ./.generate -D --ns 127.0.0.1 --dnsport 5335 --source-map --src 'https://api.mailpoof.com/domains'"

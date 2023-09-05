@@ -81,7 +81,7 @@ class remoteData():
         if headers is None:
             headers = {}
         retry = 0
-        headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0')
+        headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/116.0')
         with httpx.Client(http2=True, verify=False) as client:
             while retry < max_retry:
                 try:
@@ -137,7 +137,7 @@ class disposableHostGenerator():
         {'type': 'json', 'src': 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/7c/fakefilter/main/txt/data.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/flotwig/disposable-email-addresses/master/domains.txt'},
-        {'type': 'list', 'src': 'https://getnada.com/api/v1/domains'},
+        {'type': 'json', 'src': 'https://inboxes.com/api/v2/domain'},
         {'type': 'json', 'src': 'https://mob1.temp-mail.org/request/domains/format/json'},
         {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
         {'type': 'json', 'src': 'https://www.fakemail.net/index/index', 'scrape': True},
@@ -159,8 +159,8 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://www.trash-mail.com/inbox/'},
         {'type': 'html', 'src': 'https://mail-temp.com',
             'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
-        {'type': 'html', 'src': 'https://10minutemail.com/session/address',
-            'regex': re.compile(r""".+?@?([a-z0-9\.-]{1,128})""", re.I)},
+        # currently blocked by cloudflare - we probably need some kind of external service or undetected-chromedriver for this...
+        # {'type': 'html', 'src': 'https://10minutemail.com/session/address', 'regex': re.compile(r""".+?@?([a-z0-9\.-]{1,128})""", re.I)},
         {'type': 'html', 'src': 'https://correotemporal.org', 'regex': domain_search_regex},
         {'type': 'html', 'src': 'https://fakemailgenerator.net',
             'regex': re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
