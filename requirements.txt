@@ -1,4 +1,4 @@
-dnspython3>=1.15.0
+dnspython>=1.15.0
 idna>=3.3
 tldextract==2.2.3
 websocket-client>=0.59.0
