@@ -81,7 +81,7 @@ class remoteData():
         if headers is None:
             headers = {}
         retry = 0
-        headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0')
+        headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/116.0')
         with httpx.Client(http2=True, verify=False) as client:
             while retry < max_retry:
                 try:
@@ -159,6 +159,8 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://www.trash-mail.com/inbox/'},
         {'type': 'html', 'src': 'https://mail-temp.com',
             'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        # currently blocked by cloudflare - we probably need some kind of external service or undetected-chromedriver for this...
+        # {'type': 'html', 'src': 'https://10minutemail.com/session/address', 'regex': re.compile(r""".+?@?([a-z0-9\.-]{1,128})""", re.I)},
         {'type': 'html', 'src': 'https://correotemporal.org', 'regex': domain_search_regex},
         {'type': 'html', 'src': 'https://fakemailgenerator.net',
             'regex': re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
