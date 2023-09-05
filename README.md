@@ -94,6 +94,7 @@ Fetched 5196 domains and 6593 hashes
 |https://github.com/FGRibreau/mailchecker/|![GitHub last commit](https://img.shields.io/github/last-commit/FGRibreau/mailchecker)|
 |https://github.com/ivolo/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/ivolo/disposable-email-domains)|
 |https://github.com/7c/fakefilter/|![GitHub last commit](https://img.shields.io/github/last-commit/7c/fakefilter)|
+|https://github.com/flotwig/disposable-email-addresses/|![GitHub last commit](https://img.shields.io/github/last-commit/flotwig/disposable-email-addresses)|
 |https://www.rotvpn.com/en/disposable-email||
 
 ## Credits
@@ -111,6 +112,7 @@ Fetched 5196 domains and 6593 hashes
 [@willwhite](https://github.com/willwhite)
 [@stopforumspam](https://github.com/stopforumspam)
 [@7c](https://github.com/7c)
+[@copini](https://github.com/copini)
 
 ### CDN
 
