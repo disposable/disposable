@@ -112,6 +112,7 @@ Fetched 5196 domains and 6593 hashes
 [@willwhite](https://github.com/willwhite)
 [@stopforumspam](https://github.com/stopforumspam)
 [@7c](https://github.com/7c)
+[@copini](https://github.com/copini)
 
 ### CDN
 
