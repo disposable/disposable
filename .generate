@@ -3,7 +3,6 @@ from typing import Any, Union, Tuple
 import functools
 import json
 import re
-import urllib.request
 import sys
 import hashlib
 import html
@@ -15,8 +14,7 @@ import dns.rdatatype
 import dns.exception
 import concurrent.futures
 import logging
-import http.client
-import ssl
+import httpx
 import ipaddress
 from websocket import create_connection
 
@@ -66,7 +64,7 @@ class remoteData():
         return data
 
     @staticmethod
-    def fetchHTTPRaw(url: str, headers: Union[dict, None] = None, timeout: int = 3, max_retry: int = 150) -> Union[http.client.HTTPResponse, None]:
+    def fetchHTTPRaw(url: str, headers: Union[dict, None] = None, timeout: int = 3, max_retry: int = 150) -> Union[httpx.Response, None]:
         """Fetch data from HTTP(s) URL and return http object
 
         :param url: URL to call
@@ -84,26 +82,19 @@ class remoteData():
             headers = {}
         retry = 0
         headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; WOW64; rv:42.0) Gecko/20100101 Firefox/42.0')
-        context = ssl._create_unverified_context()
-        sslHandler = urllib.request.HTTPSHandler(context=context)
-        opener = urllib.request.build_opener(sslHandler)
-        while retry < max_retry:
-            try:
-                req = urllib.request.Request(
-                    url,
-                    data=None,
-                    headers=headers
-                )
-                return opener.open(req, timeout=timeout)
-            except Exception as e:
-                retry += 1
-                logging.error(e)
-                if remoteData.retry_errors_re.search(str(e)) and retry < max_retry:
-                    time.sleep(1)
-                    continue
+        with httpx.Client(http2=True, verify=False) as client:
+            while retry < max_retry:
+                try:
+                    return client.get(url, headers=headers, timeout=timeout)
+                except Exception as e:
+                    retry += 1
+                    logging.error(e)
+                    if remoteData.retry_errors_re.search(str(e)) and retry < max_retry:
+                        time.sleep(1)
+                        continue
 
-                logging.warning('Fetching URL %s failed, see error: %s', url, e)
-                break
+                    logging.warning('Fetching URL %s failed, see error: %s', url, e)
+                    break
         return None
 
     @staticmethod
