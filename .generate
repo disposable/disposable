@@ -16,7 +16,13 @@ import concurrent.futures
 import logging
 import httpx
 import ipaddress
+import random
+import string
 from websocket import create_connection
+
+def generate_random_string(length):
+    letters = string.ascii_lowercase
+    return ''.join(random.choice(letters) for _ in range(length))
 
 
 class remoteData():
@@ -176,6 +182,8 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://lortemail.dk'},
         {'type': 'html', 'src': 'https://tempmail.plus/en/',
             'regex': re.compile(r"""<button type=\"button\" class=\"dropdown-item\">([^<]+)</button>""", re.I)},
+        {'type': 'html', 'src': 'https://spamok.nl/demo' + generate_random_string(8),
+            'regex': re.compile(r"""<option\s+value="([^"]+)">""", re.I)},
         {'type': 'html', 'src': 'https://tempr.email',
             'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
         {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
