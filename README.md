@@ -65,6 +65,10 @@ if disposable.Domain("gmail.com") {
 }
 ```
 
+### Java
+
+Checkout [ZliIO/zliio-disposable](https://github.com/ZliIO/zliio-disposable) - thanks @ZliIO for the implementation in Java.
+
 ## Update the list of domains
 
 To update the list of domains run `.generate` (requires `python3`), and optionally submit a PR.
@@ -113,6 +117,7 @@ Fetched 5196 domains and 6593 hashes
 [@stopforumspam](https://github.com/stopforumspam)
 [@7c](https://github.com/7c)
 [@copini](https://github.com/copini)
+[@ZliIO](https://github.com/ZliIO)
 
 ### CDN
 
