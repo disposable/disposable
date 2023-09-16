@@ -110,6 +110,9 @@ webmail.co.za
 websurfer.co.za
 workmail.co.za
 xmail.ru
+riseup.net
+airmail.cc
+firemail.cc
 # https://github.com/disposable/disposable/issues/106
 myyahoo.com
 
