@@ -109,6 +109,7 @@ web.de
 webmail.co.za
 websurfer.co.za
 workmail.co.za
+xmail.ru
 # https://github.com/disposable/disposable/issues/106
 myyahoo.com
 
