@@ -134,8 +134,6 @@ class disposableHostGenerator():
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/disposable/static-disposable-lists/master/mail-data-hosts-net.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/disposable/disposable/master/blacklist.txt'},
-        {'type': 'list', 'src': 'https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/master/emailondeck.com_domains_from_bdea.cc.txt'},
-        {'type': 'list', 'src': 'https://raw.githubusercontent.com/willwhite/freemail/master/data/disposable.txt'},
         {'type': 'list', 'src': 'https://www.stopforumspam.com/downloads/toxic_domains_whole.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/martenson/disposable-email-domains/master/disposable_email_blocklist.conf'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/daisy1754/jp-disposable-emails/master/list.txt'},
