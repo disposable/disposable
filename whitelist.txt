@@ -155,3 +155,6 @@ ruffrey.com
 
 # onet.pl domain - https://github.com/disposable/disposable/issues/117
 amorki.pl
+
+# benilde.edu.ph - https://github.com/disposable/disposable/issues/128
+benilde.edu.ph
