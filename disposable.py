@@ -637,7 +637,7 @@ class disposableHostGenerator():
     @functools.lru_cache(maxsize=1024 * 1024)
     def resolve_DNS(resolver: dns.resolver.Resolver,
                     host: str,
-                    rdtype: dns.rdatatype.RdataType) -> Optional[Union[str, dns.resolver.Answer]]:
+                    rdtype: Any) -> Optional[Union[str, dns.resolver.Answer]]:
         """
         Resolve the given hostname against the given resolver and return the result or error.
 
