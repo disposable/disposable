@@ -239,6 +239,9 @@ class disposableHostGenerator():
 
         self.options = options or {}
 
+        if not self.options.get('skip_src'):
+            self.options['skip_src'] = []
+
         log_level = logging.INFO if self.options.get('verbose') else logging.WARN
         if self.options.get('debug'):
             log_level = logging.DEBUG
@@ -757,9 +760,9 @@ class disposableHostGenerator():
         """
         # fetch data from sources
         for source in self.sources:
-            if source['src'] not in 'whitelist_file' and \
-                    self.options.get('src_filter') is not None and \
-                    source['src'] != self.options.get('src_filter'):
+            if (source['src'] not in 'whitelist_file' and
+                    self.options.get('src_filter') is not None and
+                    source['src'] != self.options.get('src_filter')) or source['src'] in self.options['skip_src']:
                 continue
 
             try:
@@ -894,6 +897,7 @@ def main():
                         help='custom whitelist to load - all domains listed in that file are ignored in blacklist')
     parser.add_argument('--file', dest='file', help='custom file to load - add custom domains to local result')
     parser.add_argument('--skip-scrape', dest='skip_scrape', action='store_true', help='skip domain scraping - only use static sources')
+    parser.add_argument('--skip-src', dest='skip_src', action='append', help='skip given src - can be set multiple times')
 
     options = parser.parse_args()
     dhg = disposableHostGenerator(vars(options))
