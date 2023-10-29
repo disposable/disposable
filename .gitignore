@@ -315,3 +315,5 @@ generate.py
 
 
 /.secrets
+
+.venv/

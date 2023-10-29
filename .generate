@@ -354,7 +354,7 @@ class disposableHostGenerator():
             return True
 
         if not lines_filtered:
-            logging.warning('No results for this source')
+            logging.warning('No results for source %s', source)
             return False
 
         self.source_map[source['src']] = self.scrape if source.get('scrape') else lines_filtered
@@ -442,7 +442,7 @@ class disposableHostGenerator():
             return None
 
         cookies = {}
-        for (ky, vl) in res.getheaders():
+        for (ky, vl) in res.headers.items():
             if ky.lower() != 'set-cookie':
                 continue
 
