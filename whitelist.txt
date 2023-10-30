@@ -160,3 +160,6 @@ benilde.edu.ph
 
 # company site - https://github.com/disposable/disposable/issues/134
 cbamboo.com
+
+# owner changed - https://github.com/disposable/disposable/issues/133
+angi.com
