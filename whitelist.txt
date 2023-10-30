@@ -157,3 +157,6 @@ amorki.pl
 
 # benilde.edu.ph - https://github.com/disposable/disposable/issues/128
 benilde.edu.ph
+
+# company site - https://github.com/disposable/disposable/issues/134
+cbamboo.com
