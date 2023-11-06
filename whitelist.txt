@@ -166,3 +166,8 @@ angi.com
 
 # owner changed - https://github.com/disposable/disposable/issues/129
 purple.dev
+
+# normal mail service - https://github.com/disposable/disposable/issues/141
+tutanota.com
+keemail.me
+tuta.io
