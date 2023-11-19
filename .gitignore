@@ -311,7 +311,14 @@ domains_sha1.txt
 domains_source_map.txt
 domains_mx.json
 domains_mx.txt
-generate.py
+
+domains_strict.json
+domains_strict.txt
+domains_strict_sha1.json
+domains_strict_sha1.txt
+domains_strict_source_map.txt
+domains_strict_mx.json
+domains_strict_mx.txt
 
 
 /.secrets
