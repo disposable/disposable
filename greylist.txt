@@ -1,0 +1,34 @@
+# E-mail services in this file do allow anonymous signup and are removed from the list in strict mode
+
+# tutanota mail service - https://github.com/disposable/disposable/issues/141
+tutanota.com
+keemail.me
+tuta.io
+
+# protonmail / simplelogin
+protonmail.ch
+proton.me
+pm.me
+simplelogin.com
+silomails.com
+slmails.com
+simplelogin.fr
+aleeas.com
+slmail.me
+8shield.net
+dralias.com
+passinbox.com
+passfwd.com
+passmail.com
+passmail.net
+simplelogin.co
+simplelogin.io
+
+# DuckDuckGo
+duck.com
+
+# https://github.com/disposable/disposable/issues/97
+mozmail.com
+
+# addy.io
+anonaddy.com
