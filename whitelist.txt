@@ -124,9 +124,6 @@ asics.com
 # https://github.com/disposable/disposable/issues/94
 lendscape.com
 
-# https://github.com/disposable/disposable/issues/97
-mozmail.com
-
 # French university, e.g. <first>.<last-name>@2028.icam.fr
 # https://github.com/disposable/disposable/pull/104
 icam.fr
@@ -166,8 +163,3 @@ angi.com
 
 # owner changed - https://github.com/disposable/disposable/issues/129
 purple.dev
-
-# normal mail service - https://github.com/disposable/disposable/issues/141
-tutanota.com
-keemail.me
-tuta.io

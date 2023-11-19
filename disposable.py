@@ -27,6 +27,7 @@ HTML_GENERIC_RE = re.compile(r"""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\)
 SHA1_RE = re.compile(r'^[a-fA-F0-9]{40}')
 
 DISPOSABLE_WHITELIST_URL = 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt'
+DISPOSABLE_GREYLIST_URL = 'https://raw.githubusercontent.com/disposable/disposable/master/greylist.txt'
 
 
 def generate_random_string(length: int) -> str:
@@ -95,7 +96,7 @@ class remoteData():
             ws.close()
         except IOError as e:
             logging.exception(e)
-            return ''
+            return b''
 
         return b'\n'.join(data)
 
@@ -195,10 +196,12 @@ class disposableHostGenerator():
                 DOMAIN_SEARCH_RE
             ]
         },
-        {'type': 'html', 'src': 'https://emailfake.com', 'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        {'type': 'html', 'src': 'https://emailfake.com',
+            'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
         {'type': 'html', 'src': 'https://www.guerrillamail.com/en/'},
         {'type': 'html', 'src': 'https://www.trash-mail.com/inbox/'},
-        {'type': 'html', 'src': 'https://mail-temp.com', 'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        {'type': 'html', 'src': 'https://mail-temp.com', 'regex':
+            re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
         # currently blocked by cloudflare - we probably need some kind of external service or undetected-chromedriver for this...
         # {'type': 'html', 'src': 'https://10minutemail.com/session/address', 'regex': re.compile(r""".+?@?([a-z0-9\.-]{1,128})""", re.I)},
         {'type': 'html', 'src': 'https://correotemporal.org', 'regex': DOMAIN_SEARCH_RE},
@@ -228,12 +231,6 @@ class disposableHostGenerator():
 
         Args:
             options (Optional[Dict[str, Union[str, bool]]]): A dictionary of options to configure the generator.
-                Supported options:
-                    - 'verbose': If set to True, enables verbose logging. Defaults to False.
-                    - 'debug': If set to True, enables debug logging. Defaults to False.
-                    - 'file': Path to a file containing additional disposable domains to include.
-                    - 'whitelist': Path to a file containing a custom whitelist of domains to include.
-                                    If not specified, the default whitelist will be used.
             out_file (Optional[str]): Path to the output file. If not specified, defaults to 'domains'.
         """
 
@@ -259,6 +256,7 @@ class disposableHostGenerator():
         self.scrape = set()
         self.sha1 = set()
         self.skip = set()
+        self.grey = set()
         self.source_map = {}
 
         if self.options.get('file'):
@@ -274,12 +272,24 @@ class disposableHostGenerator():
                 'src': DISPOSABLE_WHITELIST_URL
             })
             self.options['whitelist'] = 'whitelist.txt'
+        else:
+            self.sources.insert(0, {
+                'type': 'whitelist_file',
+                'src': self.options.get('whitelist'),
+                'ignore_not_exists': self.options.get('whitelist') == 'whitelist.txt'
+            })
 
-        self.sources.insert(0, {
-            'type': 'whitelist_file',
-            'src': self.options.get('whitelist'),
-            'ignore_not_exists': self.options.get('whitelist') == 'whitelist.txt'
-        })
+        if self.options.get('greylist') is None:
+            self.sources.insert(0, {
+                'type': 'greylist',
+                'src': DISPOSABLE_GREYLIST_URL
+            })
+        else:
+            self.sources.insert(0, {
+                'type': 'greylist_file',
+                'src': self.options.get('greylist'),
+                'ignore_not_exists': self.options.get('greylist') == 'greylist.txt'
+            })
 
     def _fetch_data(self, source: Dict[str, Any]) -> bytes:
         """
@@ -291,7 +301,7 @@ class disposableHostGenerator():
         Returns:
             bytes: The fetched data.
         """
-        if source.get('type') in ('file', 'whitelist_file'):
+        if source.get('type') in ('file', 'whitelist_file', 'greylist_file'):
             return remoteData.fetch_file(source['src'], source.get('ignore_not_exists', False))
         elif source.get('type') == 'custom':
             return getattr(self, f"_process{source['src']}")()
@@ -302,7 +312,7 @@ class disposableHostGenerator():
         if source.get('type') == 'json':
             headers['Accept'] = 'application/json, text/javascript, */*; q=0.01'
             headers['X-Requested-With'] = 'XMLHttpRequest'
-        return remoteData.fetch_http(source['src'], headers, source.get('timeout', 3), self.options.get('max_retry'))
+        return remoteData.fetch_http(source['src'], headers, source.get('timeout', 3), int(self.options.get('max_retry', 1)))
 
     def _preprocess_json(self, source: Dict[str, Any], data: bytes) -> Optional[List[str]]:
         """
@@ -401,7 +411,7 @@ class disposableHostGenerator():
         if x < 1:
             logging.warning('SHA1 source did not return any valid sha1 hash')
 
-    def _preprocess_data(self, source: Dict[str, Any], data: Union[list, bytes]) -> Optional[List[str]]:
+    def _preprocess_data(self, source: Dict[str, Any], data: bytes) -> Optional[List[str]]:
         """
         Preprocesses the given data based on the specified format in the source dictionary.
 
@@ -419,7 +429,7 @@ class disposableHostGenerator():
         if fmt == 'json':
             return self._preprocess_json(source, data)
 
-        if fmt in ('whitelist', 'list', 'file', 'whitelist_file'):
+        if fmt in ('whitelist', 'list', 'file', 'whitelist_file', 'greylist', 'greylist_file'):
             return self._preprocess_file(source, data)
 
         if fmt == 'html':
@@ -437,7 +447,7 @@ class disposableHostGenerator():
 
     def _postprocess_data(self, source: Dict[str, Any], data: bytes, lines: List[str]) -> Union[bool, Tuple[int, int]]:
         """
-        Postprocesses the data obtained from a source.
+        Post processes the data obtained from a source.
 
         Args:
             source (Dict[str, Any]): The source of the data.
@@ -454,6 +464,11 @@ class disposableHostGenerator():
         if source['type'] in ('whitelist', 'whitelist_file', 'sha1'):
             for host in lines_filtered:
                 self.skip.add(host)
+            return True
+
+        if source['type'] in ('greylist', 'greylist_file'):
+            for host in lines_filtered:
+                self.grey.add(host)
             return True
 
         if not lines_filtered:
@@ -755,12 +770,23 @@ class disposableHostGenerator():
         for source in self.sources:
             logging.info("Source %12s: %s", source.get('type'), source.get('src'))
 
+    def add_greylist(self):
+        """add greylist to domains + sha1
+        """
+        self.domains.update(self.grey)
+        for host in self.grey:
+            try:
+                self.sha1.add(hashlib.sha1(host.encode('idna')).hexdigest())
+            except Exception:
+                pass
+        self.source_map['greylist'] = self.grey
+
     def generate(self):
         """Fetch all data + generate lists
         """
         # fetch data from sources
         for source in self.sources:
-            if (source['src'] not in 'whitelist_file' and
+            if (source['src'] not in ('whitelist_file', 'greylist_file') and
                     self.options.get('src_filter') is not None and
                     source['src'] != self.options.get('src_filter')) or source['src'] in self.options['skip_src']:
                 continue
@@ -772,12 +798,17 @@ class disposableHostGenerator():
                 logging.exception(err)
                 raise err
 
+        skip = self.skip.copy()
+        if self.options.get('strict'):
+            skip.update(self.grey)
+
         # remove all domains listed in whitelist from result set
-        for domain in self.skip:
+        for domain in skip:
             try:
                 self.domains.remove(domain)
             except KeyError:
                 pass
+
             try:
                 self.sha1.remove(hashlib.sha1(domain.encode('idna')).hexdigest())
             except KeyError:
@@ -790,7 +821,7 @@ class disposableHostGenerator():
                                                      self.options.get('dns_timeout', 20)
                                                      )
                 if not r or not r[1]:
-                    logging.warning('Whitelist domain %s does not resolve!', domain)
+                    logging.warning('Skipped domain %s does not resolve!', domain)
 
         # MX verify check
         self.no_mx = []
@@ -894,10 +925,14 @@ def main():
     parser.add_argument('--list-sources', action='store_true', dest='list_sources', help='list all sources')
     parser.add_argument('--list-no-mx', action='store_true', dest='list_no_mx', help='list domains without valid mx')
     parser.add_argument('--whitelist', dest='whitelist',
-                        help='custom whitelist to load - all domains listed in that file are ignored in blacklist')
+                        help='custom whitelist to load - all domains listed in that file are removed from output')
+    parser.add_argument('--greylist', dest='greylist',
+                        help='custom greylist to load - all domains listed in that file are removed from output if not --strict is set')
     parser.add_argument('--file', dest='file', help='custom file to load - add custom domains to local result')
     parser.add_argument('--skip-scrape', dest='skip_scrape', action='store_true', help='skip domain scraping - only use static sources')
     parser.add_argument('--skip-src', dest='skip_src', action='append', help='skip given src - can be set multiple times')
+    parser.add_argument('--strict', dest='strict', action="store_true", help='remove domains with anonymous signup methods - see greylist.txt')
+    parser.add_argument('--dedicated-strict', dest='dedicated_strict', action="store_true", help='create additional file including domains skipped in strict mode')
 
     options = parser.parse_args()
     dhg = disposableHostGenerator(vars(options))
@@ -906,6 +941,10 @@ def main():
     elif dhg.generate() or options.src_filter is not None:
         exit_status = 0
         dhg.write_to_file()
+        if options.dedicated_strict:
+            dhg.add_greylist()
+            dhg.out_file = 'domains_strict'
+            dhg.write_to_file()
     sys.exit(exit_status)
 
 
