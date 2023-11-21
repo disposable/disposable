@@ -799,7 +799,7 @@ class disposableHostGenerator():
                 raise err
 
         skip = self.skip.copy()
-        if self.options.get('strict'):
+        if not self.options.get('strict'):
             skip.update(self.grey)
 
         # remove all domains listed in whitelist from result set
