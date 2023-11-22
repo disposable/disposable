@@ -1,9 +1,14 @@
 # E-mail services in this file do allow anonymous signup and are removed from the list in strict mode
 
 # tutanota mail service - https://github.com/disposable/disposable/issues/141
+tutamail.com
 tutanota.com
-keemail.me
+tutanota.de
 tuta.io
+keemail.me
+
+# skiff
+skiff.com
 
 # protonmail / simplelogin
 protonmail.ch
@@ -32,3 +37,4 @@ mozmail.com
 
 # addy.io
 anonaddy.com
+anonaddy.me
