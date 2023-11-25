@@ -23,7 +23,7 @@ from websocket import create_connection
 RETRY_ERRORS_RE = re.compile(r"""(The read operation timed out|urlopen error timed out)""", re.I)
 DOMAIN_RE = re.compile(r'^[a-z\d-]{1,63}(\.[a-z-\.]{2,63})+$')
 DOMAIN_SEARCH_RE = re.compile(r'["\'\s>]([a-z\d\.-]{1,63}\.[a-z\-]{2,63})["\'\s<]', re.I)
-HTML_GENERIC_RE = re.compile(r"""<option[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)
+HTML_GENERIC_RE = re.compile(r"""<option[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)
 SHA1_RE = re.compile(r'^[a-fA-F0-9]{40}')
 
 DISPOSABLE_WHITELIST_URL = 'https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt'
@@ -220,7 +220,7 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://spamok.nl/demo' + generate_random_string(8),
             'regex': re.compile(r"""<option\s+value="([^"]+)">""", re.I)},
         {'type': 'html', 'src': 'https://tempr.email',
-            'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z0-9\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
+            'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
         {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
         {'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
     ]
