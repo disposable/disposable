@@ -9,7 +9,7 @@ license = "MIT"
 python = "^3.7"
 dnspython = "^1.15.0"
 idna = "^3.3"
-urllib3 = "^1.26.9"
+urllib3 = "^1.26.18"
 websocket-client = "0.59.0"
 tldextract = "2.2.3"
 httpx = {extras = ["http2"], version = "^0.24.1"}
