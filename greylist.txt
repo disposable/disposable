@@ -7,9 +7,6 @@ tutanota.de
 tuta.io
 keemail.me
 
-# skiff
-skiff.com
-
 # protonmail / simplelogin
 protonmail.ch
 proton.me
