@@ -108,6 +108,16 @@ web.de
 webmail.co.za
 websurfer.co.za
 workmail.co.za
+tutamail.com
+tutanota.com
+tutanota.de
+tuta.io
+keemail.me
+skiff.com
+protonmail.ch
+protonmail.com
+proton.me
+pm.me
 
 # https://github.com/disposable/disposable/pull/124
 xmail.ru
