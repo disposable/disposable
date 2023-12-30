@@ -169,6 +169,7 @@ class remoteData():
 class disposableHostGenerator():
     sources = [
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/adamloving/4401361/raw/'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/micke/valid_email2/master/config/disposable_email_domains.txt'},
         {'type': 'list', 'src': 'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/disposable/static-disposable-lists/master/mail-data-hosts-net.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt'},
