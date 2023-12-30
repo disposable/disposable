@@ -173,3 +173,19 @@ angi.com
 
 # owner changed - https://github.com/disposable/disposable/issues/129
 purple.dev
+
+# Protonmail domains - https://github.com/disposable/disposable/issues
+simplelogin.com
+silomails.com
+slmails.com
+simplelogin.fr
+aleeas.com
+slmail.me
+8shield.net
+dralias.com
+passinbox.com
+passfwd.com
+passmail.com
+passmail.net
+simplelogin.co
+simplelogin.io
