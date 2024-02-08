@@ -173,3 +173,6 @@ angi.com
 
 # owner changed - https://github.com/disposable/disposable/issues/129
 purple.dev
+
+# https://github.com/disposable/disposable/issues/156
+tmxnet.com
