@@ -222,7 +222,7 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://tempr.email',
             'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
         {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
-        {'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
+        {'type': 'custom', 'src': 'Tempmailo', 'scrape': True},
         {'type': 'custom', 'src': 'Tempmailorg', 'scrape': True}
     ]
 
