@@ -223,6 +223,7 @@ class disposableHostGenerator():
             'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
         {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
         {'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
+        {'type': 'custom', 'src': 'Tempmailorg', 'scrape': True}
     ]
 
     def __init__(self, options: Optional[Dict[str, Union[str, bool]]] = None, out_file: Optional[str] = None):
@@ -603,6 +604,65 @@ class disposableHostGenerator():
             lines.append(domain)
 
         return lines
+    
+    def _processTempmailorg(self) -> Optional[List[str]]:
+        """
+        Fetches a list of disposable email domains from tempmailo.com.
+
+        Returns:
+            A list of strings representing disposable email domains, or None if the request fails.
+        """
+        def proxy():
+            proxiess = [
+                {
+                    "http": "socks5://rjgvrsoz-rotate:tiy4f670uxym@p.webshare.io:80/",
+                    "https": "socks5://rjgvrsoz-rotate:tiy4f670uxym@p.webshare.io:80/"
+                },
+                {
+                    "http": "socks5://etkqlhvc-rotate:pl83h9kp1tby@p.webshare.io:80/",
+                    "https": "socks5://etkqlhvc-rotate:pl83h9kp1tby@p.webshare.io:80/"
+                }
+                ]
+    
+            def add_up(proxiess):
+                try:
+                    proxyData = requests.get("http://pubproxy.com/api/proxy",proxies=random.choice(proxiess),timeout=3).json()
+                    rawproxy = f"{proxyData['data'][0]['type']}://{proxyData['data'][0]['ipPort']}"
+                    genproxy = {
+                        proxyData['data'][0]['type'] : rawproxy
+                    }
+                    proxiess.append(genproxy)
+                except:
+                    pass
+        
+            pthreads = [threading.Thread(target=add_up, args=(proxiess,)) for _ in range(30)]
+            for pthread in pthreads:
+                pthread.start()
+            for pthread in pthreads:
+                pthread.join()
+        
+            return random.choice(proxiess)
+    
+        def do(domain_list):
+            userAgents = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36", "Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36", "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36"]
+            headers = {"User-Agent": random.choice(userAgents)}
+            resp = requests.post("https://web2.temp-mail.org/mailbox", proxies=proxy(), headers=headers, timeout=2)
+            if resp.status_code == 200 :
+                data = resp.json()
+                domain_list.append(data["mailbox"].split("@")[1])
+            else:
+                pass     
+
+        domains = []     
+    
+        threads = [threading.Thread(target=do, args=(domains,)) for _ in range(30)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+    
+        return list(set(domains))
+
 
     def read_files(self):
         """ read and compare to current (old) domains file
