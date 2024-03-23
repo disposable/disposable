@@ -19,6 +19,8 @@ import ipaddress
 import random
 import string
 from websocket import create_connection
+import requests
+import threading
 
 RETRY_ERRORS_RE = re.compile(r"""(The read operation timed out|urlopen error timed out)""", re.I)
 DOMAIN_RE = re.compile(r'^[a-z\d-]{1,63}(\.[a-z-\.]{2,63})+$')
