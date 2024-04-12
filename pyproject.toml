@@ -8,7 +8,7 @@ license = "MIT"
 [tool.poetry.dependencies]
 python = "^3.7"
 dnspython = "^1.15.0"
-idna = "^3.3"
+idna = "^3.7"
 urllib3 = "^1.26.18"
 websocket-client = "0.59.0"
 tldextract = "2.2.3"
