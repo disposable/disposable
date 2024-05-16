@@ -182,3 +182,6 @@ lilo.org
 
 # https://github.com/disposable/disposable/issues/166
 lionelastomers.com
+
+# https://github.com/disposable/disposable/issues/176
+deity.co.nz
