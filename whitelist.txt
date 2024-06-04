@@ -185,3 +185,6 @@ lionelastomers.com
 
 # https://github.com/disposable/disposable/issues/176
 deity.co.nz
+
+# https://github.com/disposable/disposable/issues/170
+zoho.com
