@@ -95,6 +95,7 @@ Fetched 5196 domains and 6593 hashes
 |https://github.com/ivolo/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/ivolo/disposable-email-domains)|
 |https://github.com/7c/fakefilter/|![GitHub last commit](https://img.shields.io/github/last-commit/7c/fakefilter)|
 |https://github.com/flotwig/disposable-email-addresses/|![GitHub last commit](https://img.shields.io/github/last-commit/flotwig/disposable-email-addresses)|
+|https://raw.githubusercontent.com/milan-kaszas-doclerholding/disposable-email-domain-list/|![GitHub last commit](https://img.shields.io/github/last-commit/milan-kaszas-doclerholding/disposable-email-domain-list)|
 |https://www.rotvpn.com/en/disposable-email||
 
 ## Credits
