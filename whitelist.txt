@@ -188,3 +188,6 @@ deity.co.nz
 
 # https://github.com/disposable/disposable/issues/170
 zoho.com
+
+# https://github.com/disposable/disposable/issues/185
+samsung.com
