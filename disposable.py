@@ -19,6 +19,8 @@ import ipaddress
 import random
 import string
 from websocket import create_connection
+import requests
+import threading
 
 RETRY_ERRORS_RE = re.compile(r"""(The read operation timed out|urlopen error timed out)""", re.I)
 DOMAIN_RE = re.compile(r'^[a-z\d-]{1,63}(\.[a-z-\.]{2,63})+$')
@@ -222,7 +224,8 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://tempr.email',
             'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
         {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
-        {'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
+        {'type': 'custom', 'src': 'Tempmailo', 'scrape': True},
+        {'type': 'custom', 'src': 'Tempmailorg', 'scrape': True}
     ]
 
     def __init__(self, options: Optional[Dict[str, Union[str, bool]]] = None, out_file: Optional[str] = None):
@@ -603,6 +606,38 @@ class disposableHostGenerator():
             lines.append(domain)
 
         return lines
+    
+    def _processTempmailorg(self) -> Optional[List[str]]:
+        """
+        Fetches a list of disposable email domains from tempmailo.com.
+
+        Returns:
+            A list of strings representing disposable email domains, or None if the request fails.
+        """
+
+        def do(domain_list):
+            userAgents = ["Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.1 Safari/605.1.15", "Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Mobile Safari/537.36", "Mozilla/5.0 (Linux; Android 13; SM-S901B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36", "Mozilla/5.0 (Linux; Android 13; Pixel 7 Pro) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/112.0.0.0 Mobile Safari/537.36"]
+            headers = {"User-Agent": random.choice(userAgents)}
+            resp = requests.post("https://web2.temp-mail.org/mailbox", headers=headers, timeout=2)
+            if resp.status_code == 200 :
+                data = resp.json()
+                domain_list.append(data["mailbox"].split("@")[1])
+            else:
+                pass     
+
+        domains = []     
+    
+        threads = [threading.Thread(target=do, args=(domains,)) for _ in range(15)]
+        for thread in threads:
+            thread.start()
+        for thread in threads:
+            thread.join()
+        
+        if len(set(domains)) == 0 :
+            return None
+    
+        return list(set(domains))
+
 
     def read_files(self):
         """ read and compare to current (old) domains file
