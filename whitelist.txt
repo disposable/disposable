@@ -194,3 +194,6 @@ samsung.com
 
 # https://github.com/disposable/disposable/issues/179
 e2estudios.com
+
+# https://github.com/disposable/disposable/issues/180
+file-up.fr
