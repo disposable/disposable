@@ -191,3 +191,6 @@ zoho.com
 
 # https://github.com/disposable/disposable/issues/185
 samsung.com
+
+# https://github.com/disposable/disposable/issues/179
+e2estudios.com
