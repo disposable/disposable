@@ -222,7 +222,14 @@ class disposableHostGenerator():
         {'type': 'html', 'src': 'https://tempr.email',
             'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
         {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
-        {'type': 'custom', 'src': 'Tempmailo', 'scrape': True}
+        {'type': 'custom', 'src': 'Tempmailo', 'scrape': True},
+        {
+            'type': 'html',
+            'src': 'https://yopmail.com/domain?d=all',
+            'regex': [
+                re.compile(r'@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})', re.I)
+            ]
+        }
     ]
 
     def __init__(self, options: Optional[Dict[str, Union[str, bool]]] = None, out_file: Optional[str] = None):
