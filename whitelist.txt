@@ -197,3 +197,6 @@ e2estudios.com
 
 # https://github.com/disposable/disposable/issues/180
 file-up.fr
+
+# https://github.com/disposable/disposable/issues/196
+vfemail.net
