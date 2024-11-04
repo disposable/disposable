@@ -200,3 +200,6 @@ file-up.fr
 
 # https://github.com/disposable/disposable/issues/193
 gide.com
+
+# https://github.com/disposable/disposable/issues/196
+vfemail.net
