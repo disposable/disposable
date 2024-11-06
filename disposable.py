@@ -180,6 +180,7 @@ class disposableHostGenerator():
         {'type': 'json', 'src': 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/7c/fakefilter/main/txt/data.txt'},
         {'type': 'list', 'src': 'https://raw.githubusercontent.com/flotwig/disposable-email-addresses/master/domains.txt'},
+        {'type': 'list', 'src': 'https://raw.githubusercontent.com/milan-kaszas-doclerholding/disposable-email-domain-list/master/domains.txt'},
         {'type': 'json', 'src': 'https://inboxes.com/api/v2/domain'},
         # currently blocked by cloudflare
         # {'type': 'json', 'src': 'https://mob1.temp-mail.org/request/domains/format/json'},
