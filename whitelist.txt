@@ -203,3 +203,6 @@ gide.com
 
 # https://github.com/disposable/disposable/issues/196
 vfemail.net
+
+# https://github.com/disposable/disposable/issues/192
+buildingradar.com
