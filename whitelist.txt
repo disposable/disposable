@@ -207,7 +207,7 @@ vfemail.net
 # https://github.com/disposable/disposable/issues/192
 buildingradar.com
 
-# aliases of mail.com
+# aliases of mail.com https://github.com/disposable/disposable/pull/202
 2trom.com
 accountant.com
 acdcfan.com
