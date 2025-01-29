@@ -1,4 +1,5 @@
-# E-mail services in this file do allow anonymous signup and are removed from the list in strict mode
+# E-mail services in this file do allow anonymous signup.
+# These domains are only listed in strict mode - see https://github.com/disposable/disposable/issues/81
 
 # simplelogin
 simplelogin.com
