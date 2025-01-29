@@ -153,7 +153,6 @@ yahoo.com.vn
 test.de
 home.de
 mail.htl22.at
-nus.edu.sg
 ukr.net
 
 # Personal domain - https://github.com/ivolo/disposable-email-domains/pull/938
@@ -395,3 +394,7 @@ webname.com
 worker.com
 workmail.com
 writeme.com
+
+# feedspot - https://github.com/disposable/disposable/issues/201
+feedspot.com
+feedspotmailer.com
