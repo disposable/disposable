@@ -172,7 +172,7 @@ class disposableHostGenerator():
         {'type': 'list', 'external': True, 'src': 'https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/'},
         {'type': 'list', 'external': False, 'src': 'https://raw.githubusercontent.com/disposable/static-disposable-lists/master/mail-data-hosts-net.txt'},
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt'},
-        {'type': 'list', 'external': False, 'src': 'https://raw.githubusercontent.com/disposable/disposable/master/blacklist.txt'},
+        {'type': 'list', 'external': False, 'src': 'https://raw.githubusercontent.com/disposable/static-disposable-lists/master/manual.txt'},
         {'type': 'list', 'external': True, 'src': 'https://www.stopforumspam.com/downloads/toxic_domains_whole.txt'},
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/martenson/disposable-email-domains/master/disposable_email_blocklist.conf'},
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/daisy1754/jp-disposable-emails/master/list.txt'},
