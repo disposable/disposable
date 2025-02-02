@@ -7,7 +7,7 @@ license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.9"
-dnspython = "^1.15.0"
+dnspython = "^2.6.1"
 idna = "^3.3"
 urllib3 = "^1.26.18"
 websocket-client = "0.59.0"
