@@ -6,7 +6,7 @@ authors = ["Stefan Meinecke"]
 license = "MIT"
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.9"
 dnspython = "^1.15.0"
 idna = "^3.3"
 urllib3 = "^1.26.18"
