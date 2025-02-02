@@ -26,5 +26,5 @@ jobs:
         with:
           context: "./"
           file: "docker/Dockerfile"
-          push: true
+          push: false
           tags: "${{ env.REGISTRY }}/${{ github.repository }}:latest"
