@@ -90,14 +90,13 @@ Fetched 5196 domains and 6593 hashes
 |https://gist.github.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F7e188c35fd5ca754c970e3a1caf045ef&cacheSeconds=86400)|
 |https://github.com/disposable/static-disposable-lists/|![GitHub last commit](https://img.shields.io/github/last-commit/disposable/static-disposable-lists)|
 |https://github.com/wesbos/burner-email-providers/|![GitHub last commit](https://img.shields.io/github/last-commit/wesbos/burner-email-providers)|
-|https://github.com/stopforumspam/disposable_email_domains/|![GitHub last commit](https://img.shields.io/github/last-commit/stopforumspam/disposable_email_domains)|
 |https://github.com/martenson/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/martenson/disposable-email-domains)|
 |https://github.com/daisy1754/jp-disposable-emails/|![GitHub last commit](https://img.shields.io/github/last-commit/daisy1754/jp-disposable-emails)|
 |https://github.com/FGRibreau/mailchecker/|![GitHub last commit](https://img.shields.io/github/last-commit/FGRibreau/mailchecker)|
-|https://github.com/ivolo/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/ivolo/disposable-email-domains)|
 |https://github.com/7c/fakefilter/|![GitHub last commit](https://img.shields.io/github/last-commit/7c/fakefilter)|
 |https://github.com/flotwig/disposable-email-addresses/|![GitHub last commit](https://img.shields.io/github/last-commit/flotwig/disposable-email-addresses)|
 |https://www.rotvpn.com/en/disposable-email||
+|https://www.stopforumspam.com/downloads/toxic_domains_whole.txt||
 
 ## Credits
 

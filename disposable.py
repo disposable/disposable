@@ -177,7 +177,6 @@ class disposableHostGenerator():
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/martenson/disposable-email-domains/master/disposable_email_blocklist.conf'},
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/daisy1754/jp-disposable-emails/master/list.txt'},
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt'},
-        {'type': 'json', 'external': True, 'src': 'https://raw.githubusercontent.com/ivolo/disposable-email-domains/master/index.json'},
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/7c/fakefilter/main/txt/data.txt'},
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/flotwig/disposable-email-addresses/master/domains.txt'},
         {'type': 'sha1', 'external': True, 'src': 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt'},
