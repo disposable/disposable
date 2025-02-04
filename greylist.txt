@@ -26,3 +26,6 @@ mozmail.com
 # addy.io
 anonaddy.com
 anonaddy.me
+
+# https://github.com/disposable/disposable/issues/208
+c2.hu
