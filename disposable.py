@@ -197,6 +197,16 @@ class disposableHostGenerator():
         },
         {'type': 'html', 'src': 'https://emailfake.com',
             'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        {'type': 'html', 'src': 'https://email-fake.com',
+            'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        {'type': 'html', 'src': 'https://tempm.com',
+            'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        {'type': 'html', 'src': 'https://mail-fake.com',
+            'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+        {'type': 'html', 'src': 'https://generator.email',
+            'regex': re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
+
+
         {'type': 'html', 'src': 'https://www.guerrillamail.com/en/'},
         {'type': 'html', 'src': 'https://www.trash-mail.com/inbox/'},
         {'type': 'html', 'src': 'https://mail-temp.com', 'regex':
@@ -934,6 +944,7 @@ def main():
                         help='custom whitelist to load - all domains listed in that file are removed from output')
     parser.add_argument('--greylist', dest='greylist',
                         help='custom greylist to load - all domains listed in that file are removed from output if not --strict is set')
+    parser.add_argument("--add-free-mailservices", action='store_true', dest='free_mailservices', help="list free mail services")
     parser.add_argument('--file', dest='file', help='custom file to load - add custom domains to local result')
     parser.add_argument('--skip-scrape', dest='skip_scrape', action='store_true', help='skip domain scraping - only use static sources')
     parser.add_argument('--skip-src', dest='skip_src', action='append', help='skip given src - can be set multiple times')
