@@ -155,7 +155,7 @@ def main():
 
     if args.github:
         args.mailservices = "mailservices.json"
-        args.whitelist = "whitelist.json"
+        args.whitelist = "whitelist.txt"
 
     if args.whitelist and not validate_hostname_file(args.whitelist):
         error = True
