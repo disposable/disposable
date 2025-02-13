@@ -1,18 +1,37 @@
-name: build base docker image
+name: validate commit
 
 on:
   push:
+  pull_request:
   workflow_dispatch:
 
 env:
   REGISTRY: ghcr.io
 
 jobs:
+  run-checks:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+
+      # - name: Install dependencies
+      #   run: |
+      #     pip install -r scripts/requirements.txt
+
+      - name: Run verify script
+        run: python tools/verify_data.py --github
+
   build-and-push-image:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Log in to the Container registry
         uses: docker/login-action@v1
@@ -21,7 +40,7 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Build and push Docker image
+      - name: build test image
         uses: docker/build-push-action@v2
         with:
           context: "./"
