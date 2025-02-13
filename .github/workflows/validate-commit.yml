@@ -29,6 +29,9 @@ jobs:
       - name: Run verify script
         run: python tools/verify_data.py --github
 
+      - name: Run disposable script
+        run: python disposable.py
+
 
   # build-image:
   #   runs-on: ubuntu-latest
