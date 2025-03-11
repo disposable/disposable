@@ -180,6 +180,7 @@ class disposableHostGenerator():
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/7c/fakefilter/main/txt/data.txt'},
         {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/flotwig/disposable-email-addresses/master/domains.txt'},
         {'type': 'sha1', 'external': True, 'src': 'https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt'},
+        {'type': 'list', 'external': True, 'src': 'https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/refs/heads/master/emailondeck.com_domains_from_bdea.cc.txt'},
         {'type': 'json', 'src': 'https://inboxes.com/api/v2/domain'},
         # currently blocked by cloudflare
         # {'type': 'json', 'src': 'https://mob1.temp-mail.org/request/domains/format/json'},
