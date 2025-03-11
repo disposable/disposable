@@ -98,6 +98,7 @@ Fetched 5196 domains and 6593 hashes
 |https://github.com/FGRibreau/mailchecker/|![GitHub last commit](https://img.shields.io/github/last-commit/FGRibreau/mailchecker)|
 |https://github.com/7c/fakefilter/|![GitHub last commit](https://img.shields.io/github/last-commit/7c/fakefilter)|
 |https://github.com/flotwig/disposable-email-addresses/|![GitHub last commit](https://img.shields.io/github/last-commit/flotwig/disposable-email-addresses)|
+|https://github.com/GeroldSetz/emailondeck.com-domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/emailondeck.com-domains)|
 |https://www.rotvpn.com/en/disposable-email||
 |https://www.stopforumspam.com/downloads/toxic_domains_whole.txt||
 
