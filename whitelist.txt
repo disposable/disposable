@@ -399,7 +399,7 @@ writeme.com
 feedspot.com
 feedspotmailer.com
 
-# infomaniak.com
+# infomaniak.com - https://github.com/disposable/disposable/pull/211
 etik.com
 ik.me
 ikmail.com
