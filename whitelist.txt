@@ -398,3 +398,8 @@ writeme.com
 # feedspot - https://github.com/disposable/disposable/issues/201
 feedspot.com
 feedspotmailer.com
+
+# infomaniak.com
+etik.com
+ik.me
+ikmail.com
