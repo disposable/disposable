@@ -29,3 +29,17 @@ anonaddy.me
 
 # https://github.com/disposable/disposable/issues/208
 c2.hu
+
+# onet.pl https://github.com/disposable/disposable/issues/214
+op.pl
+onet.pl
+poczta.onet.pl
+vp.pl
+onet.eu
+autograf.pl
+buziaczek.pl
+spoko.pl
+poczta.onet.eu
+onet.com.pl
+amorki.pl
+opoczta.pl
