@@ -398,3 +398,6 @@ writeme.com
 # feedspot - https://github.com/disposable/disposable/issues/201
 feedspot.com
 feedspotmailer.com
+
+# shitware - https://github.com/disposable/disposable/issues/216
+shitware.nl
