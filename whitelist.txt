@@ -401,3 +401,8 @@ feedspotmailer.com
 
 # shitware - https://github.com/disposable/disposable/issues/216
 shitware.nl
+
+# infomaniak - https://github.com/disposable/disposable/issues/222
+ikmail.com
+ik.me
+etik.com 
