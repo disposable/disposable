@@ -2,6 +2,8 @@
 
 [![npm](https://badge.fury.io/js/disposable-email.svg)](https://www.npmjs.com/package/disposable-email)
 [![GoDoc](https://godoc.org/github.com/disposable/disposable?status.svg)](https://godoc.org/github.com/disposable/disposable)
+![GitHub last commit](https://img.shields.io/github/last-commit/disposable/disposable-email-domains?label=last%20update)
+
 
 A collection of domains for disposable email services like [10MinuteMail](http://10minutemail.com) and [GuerrillaMail](https://www.guerrillamail.com). Also, some 🛠 to make your life easier.
 
