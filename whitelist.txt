@@ -406,3 +406,6 @@ shitware.nl
 ikmail.com
 ik.me
 etik.com 
+
+# wizard - https://github.com/disposable/disposable/pull/231
+wizard.com
