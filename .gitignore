@@ -324,3 +324,4 @@ domains_strict_mx.txt
 /.secrets
 
 .venv/
+.vscode/settings.json
