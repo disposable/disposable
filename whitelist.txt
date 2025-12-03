@@ -407,5 +407,8 @@ ikmail.com
 ik.me
 etik.com 
 
+# wizard - https://github.com/disposable/disposable/pull/231
+wizard.com
+
 # private domain - https://github.com/disposable/disposable/issues/235
 centraldecomunicacion.es
