@@ -406,3 +406,6 @@ shitware.nl
 ikmail.com
 ik.me
 etik.com 
+
+# private domain - https://github.com/disposable/disposable/issues/235
+centraldecomunicacion.es
