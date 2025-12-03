@@ -21,7 +21,9 @@ jobs:
         run: |
           service unbound start
           service unbound status
-      - name: Add missing dependencies
-        run: "poetry install"
+      - name: Install uv
+        run: pip3 install --upgrade uv
+      - name: Sync dependencies
+        run: uv sync
       - name: Run script
-        run: "poetry run ./disposable.py --ns 127.0.0.1 --dnsport 5335 --source-map --skip-scrape --skip-src 'Tempmailo'"
+        run: uv run ./disposable.py --ns 127.0.0.1 --dnsport 5335 --source-map --skip-scrape --skip-src 'Tempmailo'

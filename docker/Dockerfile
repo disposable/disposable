@@ -11,7 +11,7 @@ ARG DEBIAN_FRONTEND=noninteractive
 RUN	set -e \
     && apt-get update \
     && apt-get install -y --no-install-recommends wget ca-certificates python3 python3-dev python3-setuptools python3-pip unbound net-tools \
-    && pip3 install poetry \
+    && pip3 install --no-cache-dir uv \
     && rm -rf /var/lib/apt/lists/* \
     && rm -rf /tmp/* /var/tmp/* /var/log/*
 

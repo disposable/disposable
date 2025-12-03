@@ -75,12 +75,23 @@ if disposable.Domain("gmail.com") {
 
 Checkout [ZliIO/zliio-disposable](https://github.com/ZliIO/zliio-disposable) - thanks @ZliIO for the implementation in Java.
 
-## Update the list of domains
+## Development (Python with uv)
 
-To update the list of domains run `.generate` (requires `python3`), and optionally submit a PR.
+To work with the Python tools in this repo using [uv](https://docs.astral.sh/uv/):
 
 ```shell
-$ ./.generate
+pip install --upgrade uv
+uv sync
+uv run python disposable.py --help
+uv run ./.generate
+```
+
+## Update the list of domains
+
+To update the list of domains using uv, run `uv run ./.generate`, and optionally submit a PR.
+
+```shell
+$ uv run ./.generate
 Fetched 5196 domains and 6593 hashes
  - 2000 domain(s) added
  - 75 domain(s) removed
