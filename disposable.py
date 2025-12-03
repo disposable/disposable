@@ -476,7 +476,11 @@ class disposableHostGenerator():
             or a tuple containing the number of added domains and the total number of lines filtered.
         """
         lines_filtered = [line.lower().strip(' .,;@') for line in lines]
-        lines_filtered = list(filter(lambda line: self.check_valid_domains(line), lines_filtered)) or DOMAIN_SEARCH_RE.findall(str(data))
+        lines_filtered = list(filter(lambda line: self.check_valid_domains(line), lines_filtered))
+
+        if not lines_filtered:
+            fallback_lines = [match.lower().strip(' .,;@') for match in DOMAIN_SEARCH_RE.findall(str(data))]
+            lines_filtered = list(filter(lambda line: self.check_valid_domains(line), fallback_lines))
 
         if source['type'] in ('whitelist', 'whitelist_file', 'sha1'):
             for host in lines_filtered:
