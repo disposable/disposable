@@ -1,6 +1,6 @@
 {
   "name": "disposable-email",
-  "version": "0.2.3",
+  "version": "0.2.5",
   "description": "Disposable email domains",
   "main": "disposable.js",
   "scripts": {
@@ -24,6 +24,10 @@
   },
   "homepage": "https://github.com/disposable/disposable#readme",
   "devDependencies": {
+    "@types/axios": "^0.14.0",
     "mocha": "^3.1.2"
+  },
+  "dependencies": {
+    "axios": "0.30.2"
   }
 }
