@@ -1,15 +1,15 @@
 'use strict';
 
-var domainMap = {}
+var domainMap = new Set();
 var arr = require('./domains')
 
 for (var i = 0; i < arr.length; ++i)
-    domainMap[arr[i]] = null
+    domainMap.add([arr[i]])
 
 module.exports = {
     validate: function(domainOrEmail, callback) {
         var domain = domainOrEmail.split('@').pop()
-        var isValid = !domainMap.hasOwnProperty(domain)
+        var isValid = !domainMap.has(domain)
 
         if (!callback) {
             return isValid
