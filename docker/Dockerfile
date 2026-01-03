@@ -1,4 +1,4 @@
-FROM debian:bullseye-slim
+FROM debian:13.2-slim
 
 ADD docker/assets/dpkg_nodoc /etc/dpkg/dpkg.cfg.d/90_nodoc
 ADD docker/assets/dpkg_nolocale /etc/dpkg/dpkg.cfg.d/90_nolocale
