@@ -165,6 +165,49 @@ class remoteData():
         res = remoteData.fetch_http_raw(url, headers, timeout, max_retry)
         return (res and res.read()) or b''
 
+    @staticmethod
+    def fetch_http_post(url: str,
+                        headers: Optional[Dict[str, str]] = None,
+                        data: Optional[Dict[str, Any]] = None,
+                        json_data: Optional[Dict[str, Any]] = None,
+                        timeout: Optional[int] = None,
+                        max_retry: Optional[int] = None) -> bytes:
+        """Send an HTTP POST request and return the response body as bytes."""
+
+        if not headers:
+            headers = {}
+
+        if timeout is None:
+            timeout = 3
+
+        if max_retry is None:
+            max_retry = 5
+
+        headers.setdefault('User-Agent', 'Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/118.0')
+        headers.setdefault('Accept', 'application/json, text/plain, */*')
+
+        retry = 0
+        with httpx.Client(http2=True, verify=False) as client:
+            while retry < max_retry:
+                try:
+                    res = client.post(url,
+                                      headers=headers,
+                                      timeout=timeout,
+                                      data=data,
+                                      json=json_data)
+                    return res.read()
+                except Exception as e:
+                    retry += 1
+                    logging.error(e)
+                    if RETRY_ERRORS_RE.search(str(e)) and retry < max_retry:
+                        time.sleep(1)
+                        continue
+
+                    logging.warning('POST %s failed, see error: %s', url, e)
+                    break
+
+        return b''
+
 
 class disposableHostGenerator():
     sources = [
@@ -675,66 +718,51 @@ class disposableHostGenerator():
         Returns:
             A list of strings representing disposable email domains.
         """
-        # Start with known domains from tmailor.com
-        domains = []
+        headers = {
+            'accept': '*/*',
+            'accept-language': 'en-US,en;q=0.5',
+            'content-type': 'application/json',
+            'origin': 'https://tmailor.com',
+            'referer': 'https://tmailor.com/en/',
+            'user-agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0',
+        }
 
-        # Try to fetch domains from the main page
-        try:
-            data = remoteData.fetch_http('https://tmailor.com/en/', timeout=5)
-            if data:
-                html_content = data.decode('utf-8')
+        max_attempts = 15
+        domains: List[str] = []
 
-                # Look for domain patterns in the page
-                domain_matches = re.findall(r'@([a-z0-9.-]+\.[a-z]{2,})', html_content, re.I)
-                if domain_matches:
-                    domains.extend(domain_matches)
-
-                # Try to find domains in select options or data attributes
-                select_domains = re.findall(r'<option[^>]*value=["\']([a-z0-9.-]+\.[a-z]{2,})["\']', html_content, re.I)
-                if select_domains:
-                    domains.extend(select_domains)
-
-                # Look for domains in JavaScript/JSON data
-                js_domains = re.findall(r'["\']([a-z0-9-]{3,}\.[a-z]{2,})["\']', html_content, re.I)
-                # Common email providers to exclude (not disposable)
-                excluded_domains = {'gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'tmailor.com'}
-                for domain in js_domains:
-                    domain_lower = domain.lower()
-                    # Filter out common false positives
-                    if (domain and '.' in domain and len(domain) > 5 and
-                        not domain.startswith('www.') and
-                        not domain.endswith('.js') and
-                        not domain.endswith('.css') and
-                        domain_lower not in excluded_domains and
-                        'google' not in domain_lower):
-                        domains.append(domain_lower)
-        except Exception as e:
-            logging.debug('Could not fetch domains from tmailor.com: %s', e)
-
-        # Try API endpoint if available
-        try:
-            headers = {
-                'Accept': 'application/json, text/plain, */*',
-                'X-Requested-With': 'XMLHttpRequest',
+        for _ in range(max_attempts):
+            payload = {
+                'action': 'newemail',
+                'curentToken': '',
             }
-            api_data = remoteData.fetch_http('https://tmailor.com/api/domains', headers=headers, timeout=5)
-            if api_data:
-                try:
-                    api_json = json.loads(api_data.decode('utf-8'))
-                    if isinstance(api_json, list):
-                        domains.extend(api_json)
-                    elif isinstance(api_json, dict) and 'domains' in api_json:
-                        domains.extend(api_json['domains'])
-                except Exception as e:
-                    logging.debug('Failed to parse API response: %s', e)
-        except Exception as e:
-            logging.debug('API endpoint not available: %s', e)
+            try:
+                data = remoteData.fetch_http_post('https://tmailor.com/api', headers=headers, json_data=payload, timeout=8)
+            except Exception as exc:  # pragma: no cover - network quirks
+                logging.debug('Failed to talk to tmailor API: %s', exc)
+                continue
 
+            if not data:
+                continue
+
+            try:
+                resp = json.loads(data.decode('utf-8'))
+            except Exception as exc:
+                logging.debug('Invalid JSON from tmailor: %s', exc)
+                continue
+
+            email = resp.get('email')
+            if not email:
+                continue
+
+            _, _, domain = email.partition('@')
+            if domain and self.check_valid_domains(domain):
+                domains.append(domain)
+
+        domains = list(set(domains))
         if not domains:
             logging.warning('No domains found for tmailor.com')
-            return []
 
-        return list(set(domains))
+        return domains
 
     def read_files(self):
         """ read and compare to current (old) domains file
