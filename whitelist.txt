@@ -412,3 +412,6 @@ wizard.com
 
 # private domain - https://github.com/disposable/disposable/issues/235
 centraldecomunicacion.es
+
+139.com
+189.cn
