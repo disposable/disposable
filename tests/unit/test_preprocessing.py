@@ -53,8 +53,9 @@ class TestPreprocessHtml:
 
         data = b"<option>@example.com (PW)</option><option>test.org</option>"
         result = preprocess_html(data, HTML_GENERIC_RE)
-        assert "example.com" in result
-        assert "test.org" in result
+        result_set = set(result)
+        assert "example.com" in result_set
+        assert "test.org" in result_set
 
 
 class TestPreprocessSha1:
