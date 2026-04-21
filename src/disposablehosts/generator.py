@@ -301,11 +301,11 @@ class disposableHostGenerator:
             or tuple of (added_count, found_count).
         """
         lines_filtered = [line.lower().strip(" .,;@") for line in lines]
-        lines_filtered = list(filter(lambda line: self.check_valid_domains(line), lines_filtered))
+        lines_filtered = list(filter(self.check_valid_domains, lines_filtered))
 
         if not lines_filtered:
             fallback_lines = [match.lower().strip(" .,;@") for match in DOMAIN_SEARCH_RE.findall(str(data))]
-            lines_filtered = list(filter(lambda line: self.check_valid_domains(line), fallback_lines))
+            lines_filtered = list(filter(self.check_valid_domains, fallback_lines))
 
         if source["type"] in ("whitelist", "whitelist_file", "sha1"):
             for host in lines_filtered:
@@ -458,6 +458,7 @@ class disposableHostGenerator:
                 for line in f:
                     self.old_domains.add(line.strip())
         except FileNotFoundError:
+            # Expected on first run - optional file may not exist yet
             pass
 
         self.old_sha1 = set()
@@ -466,6 +467,7 @@ class disposableHostGenerator:
                 for line in f:
                     self.old_sha1.add(line.strip())
         except FileNotFoundError:
+            # Expected on first run - optional file may not exist yet
             pass
 
         self.legacy_domains = set()
@@ -474,6 +476,7 @@ class disposableHostGenerator:
                 for line in f:
                     self.legacy_domains.add(line.strip())
         except FileNotFoundError:
+            # Expected on first run - optional file may not exist yet
             pass
 
     def check_valid_domains(self, host: str) -> bool:
@@ -557,15 +560,8 @@ class disposableHostGenerator:
         nameservers, dnsport, dns_timeout = self._get_dns_options()
 
         for domain in skip:
-            try:
-                self.domains.remove(domain)
-            except KeyError:
-                pass
-
-            try:
-                self.sha1.remove(hashlib.sha1(domain.encode("idna")).hexdigest())  # nosec B324
-            except KeyError:
-                pass
+            self.domains.discard(domain)
+            self.sha1.discard(hashlib.sha1(domain.encode("idna")).hexdigest())  # nosec B324
 
             if self.options.get("dns_verify") and domain not in ("example.com", "example.org", "example.net"):
                 r = fetch_MX(domain, nameservers, dnsport, dns_timeout)
@@ -649,10 +645,7 @@ class disposableHostGenerator:
         if self.no_mx:
             domains_with_mx = set(self.domains)
             for domain in self.no_mx:
-                try:
-                    domains_with_mx.remove(domain)
-                except KeyError:
-                    pass
+                domains_with_mx.discard(domain)
 
             domains = sorted(domains_with_mx)
             with open(f"{self.out_file}_mx.txt", "w") as ff:
