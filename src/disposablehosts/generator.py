@@ -49,6 +49,22 @@ class disposableHostGenerator:
         },
         {"type": "json", "src": "https://inboxes.com/api/v2/domain"},
         {"type": "json", "src": "https://api.internal.temp-mail.io/api/v2/domains"},
+        # fakemail.net - working again (HTTP 200)
+        {"type": "html", "src": "https://www.fakemail.net/index/index", "regex": DOMAIN_SEARCH_RE},
+        # mailpoof.com - DNS NXDOMAIN, service permanently offline
+        # {"type": "json", "src": "https://api.mailpoof.com/domains"},
+        # dropmail.me - WebSocket URL changed to /api/graphql/<token>/websocket, needs new implementation
+        # {"type": "ws", "src": "wss://dropmail.me/websocket"},
+        # tempmail.ninja - requires cloudflare bypass (TODO: implement workaround)
+        # {"type": "html", "src": "https://tempmail.ninja/en"},
+        # tmp.al - luxusmail.org redirects here (HTTP 301), now an Android app
+        # TODO: Investigate Android app - may need new extraction method
+        # {"type": "html", "src": "https://tmp.al",
+        #     "regex": re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
+        # tempmailo.com - cloudflare challenge, can't scrape
+        # {"type": "custom", "src": "Tempmailo", "scrape": True},
+        # correotemporal.org - redirects to tempmail.ninja (HTTP 301)
+        # {"type": "html", "src": "https://correotemporal.org", "regex": DOMAIN_SEARCH_RE},
         {"type": "file", "src": "blacklist.txt", "ignore_not_exists": True},
         {
             "type": "html",
@@ -94,7 +110,7 @@ class disposableHostGenerator:
         {"type": "html", "src": "https://www.temporary-mail.net", "regex": re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
         {
             "type": "html",
-            "src": "https://nospam.today/home",
+            "src": "https://nospam.today",
             "regex": [
                 re.compile(r"""wire:initial-data="(.+?domains[^\"]+)\""""),
                 re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
