@@ -269,23 +269,13 @@ dependencies = [
     { name = "websocket-client" },
 ]
 
-[package.optional-dependencies]
-dev = [
-    { name = "bandit" },
-    { name = "pyright" },
-    { name = "pytest" },
-    { name = "pytest-cov" },
-    { name = "ruff" },
-    { name = "vulture" },
-    { name = "xenon" },
-]
-
 [package.dev-dependencies]
 dev = [
     { name = "bandit" },
     { name = "pyright" },
     { name = "pytest" },
     { name = "pytest-cov" },
+    { name = "radon" },
     { name = "ruff" },
     { name = "vulture" },
     { name = "xenon" },
@@ -293,21 +283,13 @@ dev = [
 
 [package.metadata]
 requires-dist = [
-    { name = "bandit", marker = "extra == 'dev'", specifier = ">=1.8.3" },
     { name = "dnspython", specifier = ">=2.6.1,<3.0.0" },
     { name = "httpx", extras = ["http2"], specifier = ">=0.27.1,<0.28.0" },
     { name = "idna", specifier = ">=3.3,<4.0.0" },
-    { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.408" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=9.0.3" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=6.0.0" },
-    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.15.11" },
     { name = "tldextract", specifier = ">=2.2.3,<3.0.0" },
     { name = "urllib3", specifier = ">=2.5.0,<3.0.0" },
-    { name = "vulture", marker = "extra == 'dev'", specifier = ">=2.14" },
-    { name = "websocket-client", specifier = ">=0.59.0,<1.0.0" },
-    { name = "xenon", marker = "extra == 'dev'", specifier = ">=0.9.3" },
+    { name = "websocket-client", specifier = ">=1.0.0,<2.0.0" },
 ]
-provides-extras = ["dev"]
 
 [package.metadata.requires-dev]
 dev = [
@@ -315,6 +297,7 @@ dev = [
     { name = "pyright", specifier = ">=1.1.408" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "pytest-cov", specifier = ">=7.1.0" },
+    { name = "radon", specifier = ">=5.1.0" },
     { name = "ruff", specifier = ">=0.15.11" },
     { name = "vulture", specifier = ">=2.16" },
     { name = "xenon", specifier = ">=0.9.3" },
@@ -816,14 +799,11 @@ wheels = [
 
 [[package]]
 name = "websocket-client"
-version = "0.59.0"
+version = "1.9.0"
 source = { registry = "https://pypi.org/simple" }
-dependencies = [
-    { name = "six" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/48/bf/c706b56243f1641159ff211b51d3341024e1cdf63defc2b74595b6319039/websocket-client-0.59.0.tar.gz", hash = "sha256:d376bd60eace9d437ab6d7ee16f4ab4e821c9dae591e1b783c58ebd8aaf80c5c", size = 57897 }
+sdist = { url = "https://files.pythonhosted.org/packages/2c/41/aa4bf9664e4cda14c3b39865b12251e8e7d239f4cd0e3cc1b6c2ccde25c1/websocket_client-1.9.0.tar.gz", hash = "sha256:9e813624b6eb619999a97dc7958469217c3176312b3a16a4bd1bc7e08a46ec98", size = 70576 }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/f7/0c/d52a2a63512a613817846d430d16a8fbe5ea56dd889e89c68facf6b91cb6/websocket_client-0.59.0-py2.py3-none-any.whl", hash = "sha256:2e50d26ca593f70aba7b13a489435ef88b8fc3b5c5643c1ce8808ff9b40f0b32", size = 67216 },
+    { url = "https://files.pythonhosted.org/packages/34/db/b10e48aa8fff7407e67470363eac595018441cf32d5e1001567a7aeba5d2/websocket_client-1.9.0-py3-none-any.whl", hash = "sha256:af248a825037ef591efbf6ed20cc5faa03d3b47b9e5a2230a529eeee1c1fc3ef", size = 82616 },
 ]
 
 [[package]]

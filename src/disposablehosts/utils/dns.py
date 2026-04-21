@@ -11,24 +11,34 @@ import dns.resolver
 
 
 @functools.lru_cache(maxsize=1024 * 1024)
-def resolve_DNS(
-    resolver: dns.resolver.Resolver,
+def resolve_DNS_cached(
     host: str,
     rdtype: Any,
+    nameserver_tuple: Optional[tuple] = None,
 ) -> Optional[Union[str, dns.resolver.Answer]]:
-    """Resolve the given hostname against the given resolver.
+    """Resolve the given hostname (cached version).
 
     Args:
-        resolver: The DNS resolver to use for the query.
         host: The hostname to resolve.
         rdtype: The type of DNS record to query for.
+        nameserver_tuple: Optional tuple of (nameservers, port, timeout) for cache key.
 
     Returns:
         The result of the DNS query, or an error message string if the query failed.
     """
+    resolver = dns.resolver.Resolver()
+    if nameserver_tuple:
+        nameservers, port, timeout = nameserver_tuple
+        if nameservers:
+            resolver.nameservers = nameservers
+        if port:
+            resolver.port = port
+        if timeout:
+            resolver.lifetime = resolver.timeout = timeout
+
     r = None
     try:
-        r = resolver.query(host, rdtype)
+        r = resolver.resolve(host, rdtype)
     except KeyboardInterrupt:
         raise
     except dns.resolver.NXDOMAIN:
@@ -43,6 +53,64 @@ def resolve_DNS(
         pass
 
     return r
+
+
+def _process_mx_resolution(
+    domain: str,
+    resolve: Tuple[str, Any, str],
+    cache_key: Tuple,
+) -> Tuple[Optional[set], bool]:
+    """Process MX resolution and return MX list or None.
+
+    Returns:
+        Tuple of (mx_list, is_invalid) where mx_list is None if not MX record.
+    """
+    r = resolve_DNS_cached(resolve[0], resolve[1], cache_key)
+
+    if isinstance(r, str):
+        logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], r)
+        return (None, False)
+
+    if resolve[1] != dns.rdatatype.MX:
+        return (None, False)
+
+    mx_list = set()
+    if r and r.rrset:
+        mx_list = {rr.exchange.to_text(rr.exchange).lower() for rr in r.rrset}
+
+    logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], mx_list)
+
+    if not mx_list:
+        return (set(), False)
+
+    if "." in mx_list or "localhost" in mx_list:
+        return (mx_list, True)
+
+    return (mx_list, False)
+
+
+def _validate_ip_addresses(r: Any) -> Tuple[bool, List[str]]:
+    """Validate IP addresses from DNS response.
+
+    Returns:
+        Tuple of (is_invalid, ip_list).
+    """
+    invalid_ip = False
+    ips = []
+    for _r in r:
+        _ipr = None
+        try:
+            ips.append(_r.address)
+            _ipr = ipaddress.ip_address(_r.address)
+        except Exception:  # nosec B110 - Generic exception handler for DNS resolution failures
+            invalid_ip = True
+            break
+
+        if not _ipr or _ipr.is_private or _ipr.is_reserved or _ipr.is_loopback or _ipr.is_multicast:
+            invalid_ip = True
+            break
+
+    return (invalid_ip, ips)
 
 
 def fetch_MX(
@@ -65,58 +133,30 @@ def fetch_MX(
     if resolver_timeout is None:
         resolver_timeout = 20
 
-    resolver = dns.resolver.Resolver()
-    resolver.lifetime = resolver.timeout = resolver_timeout
-
-    if nameservers:
-        resolver.nameservers = nameservers
-
-    if dnsport:
-        resolver.port = dnsport
-
     rq = [(domain, dns.rdatatype.MX, "MX")]
+    cache_key = (tuple(nameservers) if nameservers else None, dnsport, resolver_timeout)
 
     while rq:
         resolve = rq.pop()
-        r = resolve_DNS(resolver, resolve[0], resolve[1])
 
-        if isinstance(r, str):
-            logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], r)
-            r = None
-
+        # Handle MX records
         if resolve[1] == dns.rdatatype.MX:
-            mx_list = set()
-            if r and r.rrset:
-                mx_list = {rr.exchange.to_text(rr.exchange).lower() for rr in r.rrset}
+            mx_list, is_invalid = _process_mx_resolution(domain, resolve, cache_key)
+            if is_invalid:
+                return (domain, False)
+            if mx_list is not None:
+                if mx_list:
+                    rq.extend((x, dns.rdatatype.A, "A") for x in mx_list)
+                else:
+                    rq.append((domain, dns.rdatatype.A, "A"))
+                continue
 
-            logging.debug("%20s: resolved %20s (%2s): %s", domain, resolve[0], resolve[2], mx_list)
-            if mx_list:
-                if "." in mx_list or mx_list == ["localhost"]:
-                    return (domain, False)
-
-                rq.extend((x, dns.rdatatype.A, "A") for x in mx_list)
-            else:
-                rq.append((domain, dns.rdatatype.A, "A"))
+        # Handle A/AAAA records
+        r = resolve_DNS_cached(resolve[0], resolve[1], cache_key)
+        if isinstance(r, str) or not r:
             continue
 
-        if not r:
-            continue
-
-        invalid_ip = False
-        ips = []
-        for _r in r:
-            _ipr = None
-            try:
-                ips.append(_r.address)
-                _ipr = ipaddress.ip_address(_r.address)
-            except Exception:  # nosec B110 - Generic exception handler for DNS resolution failures
-                invalid_ip = True
-                break
-
-            if not _ipr or _ipr.is_private or _ipr.is_reserved or _ipr.is_loopback or _ipr.is_multicast:
-                invalid_ip = True
-                break
-
+        invalid_ip, ips = _validate_ip_addresses(r)
         logging.debug(
             "%20s: resolved %20s (%2s): %s (invalid: %s)",
             domain,

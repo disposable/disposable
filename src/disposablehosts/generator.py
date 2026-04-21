@@ -4,10 +4,9 @@ import concurrent.futures
 import hashlib
 import json
 import logging
-import numbers
 import re
 import time
-from typing import Any, ClassVar, Dict, List, Optional, Set, Tuple, Union
+from typing import Any, Dict, List, Optional, Set, Tuple, Union
 
 import tldextract
 
@@ -27,7 +26,7 @@ from .utils.dns import fetch_MX
 class disposableHostGenerator:
     """Generator for collecting and validating disposable email domains."""
 
-    sources: ClassVar[List[Dict[str, Any]]] = [
+    sources: List[Dict[str, Any]] = [  # noqa: RUF012 - Mutable default is intentional, copied in __init__
         {"type": "list", "external": True, "src": "https://gist.githubusercontent.com/adamloving/4401361/raw/"},
         {"type": "list", "external": True, "src": "https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/"},
         {"type": "list", "external": False, "src": "https://raw.githubusercontent.com/disposable/static-disposable-lists/master/mail-data-hosts-net.txt"},
@@ -160,6 +159,9 @@ class disposableHostGenerator:
         self.skip: Set[str] = set()
         self.grey: Set[str] = set()
         self.source_map: Dict[str, Union[Set[str], List[str]]] = {}
+
+        # Copy class sources to instance to avoid mutating ClassVar
+        self.sources = list(self.sources)
 
         if self.options.get("file"):
             self.sources.insert(0, {"type": "file", "src": self.options["file"]})
@@ -493,22 +495,21 @@ class disposableHostGenerator:
                 pass
         self.source_map["greylist"] = self.grey
 
-    def generate(self) -> bool:
-        """Fetch all data and generate lists.
+    def _should_skip_source(self, source: Dict[str, Any]) -> bool:
+        """Check if a source should be skipped based on filter/skip options."""
+        skip_src_list = self.options.get("skip_src", [])
+        if not isinstance(skip_src_list, list):
+            skip_src_list = []
+        return (
+            source["src"] not in ("whitelist_file", "greylist_file")
+            and self.options.get("src_filter") is not None
+            and source["src"] != self.options.get("src_filter")
+        ) or source["src"] in skip_src_list
 
-        Returns:
-            True if data was fetched and there are changes, False otherwise.
-        """
-        # Fetch data from sources
+    def _fetch_sources(self) -> None:
+        """Fetch and process data from all configured sources."""
         for source in self.sources:
-            skip_src_list = self.options.get("skip_src", [])
-            if not isinstance(skip_src_list, list):
-                skip_src_list = []
-            if (
-                source["src"] not in ("whitelist_file", "greylist_file")
-                and self.options.get("src_filter") is not None
-                and source["src"] != self.options.get("src_filter")
-            ) or source["src"] in skip_src_list:
+            if self._should_skip_source(source):
                 continue
 
             try:
@@ -518,11 +519,27 @@ class disposableHostGenerator:
                 logging.exception(err)
                 raise err
 
+    def _get_dns_options(self) -> Tuple[Optional[List[str]], Optional[int], int]:
+        """Extract and validate DNS options."""
+        nameservers = self.options.get("nameservers")
+        if not isinstance(nameservers, list):
+            nameservers = None
+        dnsport = self.options.get("dnsport")
+        if not isinstance(dnsport, int):
+            dnsport = None
+        dns_timeout_val = self.options.get("dns_timeout", 20)
+        if isinstance(dns_timeout_val, bool) or not isinstance(dns_timeout_val, (int, float)):
+            dns_timeout_val = 20
+        return nameservers, dnsport, int(dns_timeout_val)
+
+    def _apply_whitelist(self) -> None:
+        """Remove whitelisted domains and verify DNS if enabled."""
         skip = self.skip.copy()
         if not self.options.get("strict"):
             skip.update(self.grey)
 
-        # Remove all domains listed in whitelist from result set
+        nameservers, dnsport, dns_timeout = self._get_dns_options()
+
         for domain in skip:
             try:
                 self.domains.remove(domain)
@@ -530,87 +547,74 @@ class disposableHostGenerator:
                 pass
 
             try:
-                self.sha1.remove(hashlib.sha1(domain.encode("idna")).hexdigest())  # nosec B324 - SHA1 used for domain hashing, not security
+                self.sha1.remove(hashlib.sha1(domain.encode("idna")).hexdigest())  # nosec B324
             except KeyError:
                 pass
 
-            if self.options.get("dns_verify") and domain not in (
-                "example.com",
-                "example.org",
-                "example.net",
-            ):
-                nameservers = self.options.get("nameservers")
-                if not isinstance(nameservers, list):
-                    nameservers = None
-                dnsport = self.options.get("dnsport")
-                if not isinstance(dnsport, int):
-                    dnsport = None
-                dns_timeout = self.options.get("dns_timeout", 20)
-                if not isinstance(dns_timeout, numbers.Real) or isinstance(dns_timeout, bool):
-                    dns_timeout = 20
+            if self.options.get("dns_verify") and domain not in ("example.com", "example.org", "example.net"):
                 r = fetch_MX(domain, nameservers, dnsport, dns_timeout)
                 if not r or not r[1]:
                     logging.warning("Skipped domain %s does not resolve!", domain)
 
-        # MX verify check
+    def _verify_mx_records(self) -> None:
+        """Verify MX records for all domains using thread pool."""
         self.no_mx = []
-        # Initialize DNS options with proper types
-        nameservers_opt = self.options.get("nameservers")
-        if not isinstance(nameservers_opt, list):
-            nameservers_opt = None
-        dnsport_opt = self.options.get("dnsport")
-        if not isinstance(dnsport_opt, int):
-            dnsport_opt = None
-        dns_timeout_opt = self.options.get("dns_timeout", 20)
-        if not isinstance(dns_timeout_opt, numbers.Real) or isinstance(dns_timeout_opt, bool):
-            dns_timeout_opt = 20
+        if not self.options.get("dns_verify"):
+            return
+
+        nameservers, dnsport, dns_timeout = self._get_dns_options()
+        dns_threads = self.options.get("dns_threads", 1)
+        if not isinstance(dns_threads, int):
+            dns_threads = 1
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=dns_threads) as executor:
+            futures = [executor.submit(fetch_MX, domain, nameservers, dnsport, dns_timeout) for domain in self.domains]
+            for future in concurrent.futures.as_completed(futures):
+                (domain, valid) = future.result()
+                if not valid:
+                    self.no_mx.append(domain)
+
+    def _log_generation_results(self) -> bool:
+        """Log results and return whether changes were detected."""
+        if not self.options.get("verbose"):
+            return True
+
+        if not self.old_domains:
+            self.read_files()
+
+        added = list(filter(lambda domain: domain not in self.old_domains, self.domains))
+        removed = list(filter(lambda domain: domain not in self.domains, self.old_domains))
+        added_sha1 = list(filter(lambda sha_str: sha_str not in self.old_sha1, self.sha1))
+        removed_sha1 = list(filter(lambda sha_str: sha_str not in self.sha1, self.old_sha1))
+
+        logging.info("Fetched %s domains and %s hashes", len(self.domains), len(self.sha1))
         if self.options.get("dns_verify"):
-            dns_threads = self.options.get("dns_threads", 1)
-            if not isinstance(dns_threads, int):
-                dns_threads = 1
-            with concurrent.futures.ThreadPoolExecutor(max_workers=dns_threads) as executor:
-                futures = [
-                    executor.submit(
-                        fetch_MX,
-                        domain,
-                        nameservers_opt,
-                        dnsport_opt,
-                        dns_timeout_opt,
-                    )
-                    for domain in self.domains
-                ]
-                for future in concurrent.futures.as_completed(futures):
-                    (domain, valid) = future.result()
-                    if not valid:
-                        self.no_mx.append(domain)
+            logging.info(" - %s domain(s) have no MX", len(self.no_mx))
+            if self.options.get("list_no_mx"):
+                logging.info("No MX: %s", self.no_mx)
+        logging.info(" - %s domain(s) added", len(added))
+        logging.info(" - %s domain(s) removed", len(removed))
+        logging.info(" - %s hash(es) added", len(added_sha1))
+        logging.info(" - %s hash(es) removed", len(removed_sha1))
 
-        if self.options.get("verbose"):
-            if not self.old_domains:
-                self.read_files()
+        # Stop if nothing has changed
+        if len(added) == len(removed) == len(added_sha1) == len(removed_sha1) == 0:
+            return False
 
-            added = list(filter(lambda domain: domain not in self.old_domains, self.domains))
-            removed = list(filter(lambda domain: domain not in self.domains, self.old_domains))
-
-            added_sha1 = list(filter(lambda sha_str: sha_str not in self.old_sha1, self.sha1))
-            removed_sha1 = list(filter(lambda sha_str: sha_str not in self.sha1, self.old_sha1))
-
-            logging.info("Fetched %s domains and %s hashes", len(self.domains), len(self.sha1))
-            if self.options.get("dns_verify"):
-                logging.info(" - %s domain(s) have no MX", len(self.no_mx))
-                if self.options.get("list_no_mx"):
-                    logging.info("No MX: %s", self.no_mx)
-            logging.info(" - %s domain(s) added", len(added))
-            logging.info(" - %s domain(s) removed", len(removed))
-            logging.info(" - %s hash(es) added", len(added_sha1))
-            logging.info(" - %s hash(es) removed", len(removed_sha1))
-            # Stop if nothing has changed
-            if len(added) == len(removed) == len(added_sha1) == len(removed_sha1) == 0:
-                return False
-
-            if self.options.get("src_filter"):
-                logging.info("Fetched: %s", self.domains)
-
+        if self.options.get("src_filter"):
+            logging.info("Fetched: %s", self.domains)
         return True
+
+    def generate(self) -> bool:
+        """Fetch all data and generate lists.
+
+        Returns:
+            True if data was fetched and there are changes, False otherwise.
+        """
+        self._fetch_sources()
+        self._apply_whitelist()
+        self._verify_mx_records()
+        return self._log_generation_results()
 
     def write_to_file(self) -> None:
         """Write new list to file(s)."""

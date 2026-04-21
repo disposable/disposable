@@ -14,6 +14,6 @@ def preprocess_websocket(data: bytes) -> List[str]:
     """
     for line in data.splitlines():
         line_str = line.decode("utf-8")
-        if line_str[0] == "D":
+        if line_str.startswith("D"):
             return line_str[1:].split(",")
     return []

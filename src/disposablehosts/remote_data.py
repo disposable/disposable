@@ -31,11 +31,7 @@ class remoteData:
         try:
             with open(src, "rb") as f:
                 return f.read()
-        except FileNotFoundError as e:
-            if ignore_errors:
-                return b""
-            raise e
-        except IOError as e:
+        except (FileNotFoundError, IOError) as e:
             if ignore_errors:
                 return b""
             raise e
@@ -59,7 +55,7 @@ class remoteData:
                     line = line.encode("utf-8")
                 data.append(line)
             ws.close()
-        except (IOError, Exception) as e:
+        except Exception as e:
             logging.warning("WebSocket connection failed: %s", e)
             return b""
 

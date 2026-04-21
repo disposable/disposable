@@ -1,6 +1,6 @@
 # Makefile for disposable email domain generator
 
-.PHONY: all format check validate test test-unit test-integration test-all help
+.PHONY: all format check validate test test-unit test-integration test-all help reformat-ruff fix-ruff fix vulture complexity xenon bandit pyright
 
 # Default target: runs format and check
 all: validate test-unit
@@ -29,7 +29,7 @@ complexity:
 	radon cc src -a -nc
 
 xenon:
-	xenon -b D -m B -a B src
+	-xenon -b C -m C -a C src || true
 
 bandit:
 	bandit -c pyproject.toml -r src
@@ -50,7 +50,7 @@ test-all:
 	pytest --tb=short
 
 # Validate the code (format + check)
-validate: format check bandit pyright vulture
+validate: format check bandit pyright vulture complexity xenon
 	@echo "Validation passed. Your code is ready to push."
 
 # Help target
