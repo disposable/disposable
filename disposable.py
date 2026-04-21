@@ -264,6 +264,9 @@ class disposableHostGenerator():
         logger = logging.getLogger('tldextract')
         logger.setLevel('WARNING')
 
+        httpx_logger = logging.getLogger('httpx')
+        httpx_logger.setLevel('WARNING')
+
         self.domains = set()
         self.legacy_domains = set()
         self.no_mx = set()
