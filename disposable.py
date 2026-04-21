@@ -520,7 +520,7 @@ class disposableHostGenerator():
             logging.debug("Example domain: %s", lines_filtered[0])
 
         if source.get('scrape'):
-            logging.info('Added %s scraped domains: %s', len(added_scrape_domains), added_scrape_domains)
+            logging.debug('Added %s scraped domains: %s', len(added_scrape_domains), added_scrape_domains)
             return len(added_scrape_domains), len(lines_filtered)
 
         return added_domains, len(lines_filtered)
@@ -535,9 +535,9 @@ class disposableHostGenerator():
         Returns:
             bool: True if the process was successful, False otherwise.
         """
-        logging.info("Process %s (%s)", source['src'], source['type'])
+        logging.debug("Process %s (%s)", source['src'], source['type'])
         if self.options.get('skip_scrape') and source.get('scrape'):
-            logging.info('Skipping scraping source %s', source['src'])
+            logging.debug('Skipping scraping source %s', source['src'])
             source['scrape'] = False
 
         max_scrape = 80
