@@ -441,7 +441,7 @@ class disposableHostGenerator:
             with open(f"{self.out_file}.txt") as f:
                 for line in f:
                     self.old_domains.add(line.strip())
-        except IOError:
+        except FileNotFoundError:
             pass
 
         self.old_sha1 = set()
@@ -449,7 +449,7 @@ class disposableHostGenerator:
             with open(f"{self.out_file}_sha1.txt") as f:
                 for line in f:
                     self.old_sha1.add(line.strip())
-        except IOError:
+        except FileNotFoundError:
             pass
 
         self.legacy_domains = set()
@@ -457,7 +457,7 @@ class disposableHostGenerator:
             with open(f"{self.out_file}_legacy.txt") as f:
                 for line in f:
                     self.legacy_domains.add(line.strip())
-        except IOError:
+        except FileNotFoundError:
             pass
 
     def check_valid_domains(self, host: str) -> bool:
