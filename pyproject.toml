@@ -3,7 +3,7 @@ name = "disposable"
 version = "0.3"
 description = "Generate a list of disposable email domains"
 readme = "README.md"
-requires-python = ">=3.9,<4.0"
+requires-python = ">=3.10,<4.0"
 license = { text = "MIT" }
 authors = [{ name = "Stefan Meinecke" }]
 
@@ -16,6 +16,79 @@ dependencies = [
   "httpx[http2]>=0.27.1,<0.28.0",
 ]
 
+[project.scripts]
+disposable = "disposablehosts:main"
+
+[project.optional-dependencies]
+dev = [
+    "bandit>=1.8.3",
+    "pytest-cov>=6.0.0",
+    "pytest>=9.0.3",
+    "pyright>=1.1.408",
+    "ruff>=0.15.11",
+    "vulture>=2.14",
+    "xenon>=0.9.3",
+]
+
+[tool.uv]
+package = true
+
 [build-system]
 requires = ["hatchling"]
 build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/disposablehosts"]
+
+[tool.hatch.build.targets.sdist]
+include = ["src/disposablehosts", "disposable.py", "README.md", "LICENSE", "pyproject.toml"]
+
+[dependency-groups]
+dev = [
+    "bandit>=1.9.4",
+    "pyright>=1.1.408",
+    "pytest>=9.0.3",
+    "pytest-cov>=7.1.0",
+    "ruff>=0.15.11",
+    "vulture>=2.16",
+    "xenon>=0.9.3",
+]
+
+[tool.ruff]
+exclude = [".venv", "__pycache__", ".git", "dist", "build"]
+line-length = 160
+indent-width = 4
+
+[tool.ruff.format]
+quote-style = "double"
+indent-style = "space"
+line-ending = "lf"
+preview = true
+
+[tool.ruff.lint]
+select = ["E9", "F82", "F401", "F841", "B", "RUF"]
+ignore = ["F821"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**/*.py" = ["E501", "B", "RUF"]
+
+[tool.pytest.ini_options]
+addopts = [
+    "--import-mode=importlib",
+    "--cov=src",
+    "--cov-report=term-missing",
+    "--cov-report=xml",
+]
+pythonpath = ["src"]
+
+[tool.pyright]
+exclude = ["**/__pycache__", "**/.venv", "**/tests", "**/dist", "**/build"]
+
+[tool.bandit]
+exclude_dirs = [".venv", "tests"]
+
+[tool.vulture]
+exclude = [".venv", "tests", "dist", "build"]
+min_confidence = 80
+paths = ["src"]
+sort_by_size = true

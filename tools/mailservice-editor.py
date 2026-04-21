@@ -27,7 +27,7 @@ def update_json(
     hosts: Optional[List[str]] = None,
     mx_hosts: Optional[List[str]] = None,
     account_type: Optional[str] = None,
-    signup_verification: Optional[str] = None
+    signup_verification: Optional[str] = None,
 ) -> None:
     """Update or add a domain entry in the JSON file.
 

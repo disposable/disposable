@@ -29,6 +29,12 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Run validation
+        run: uv run make validate
+
+      - name: Run tests
+        run: uv run make test
+
       - name: Run verify script
         run: uv run python tools/verify_data.py --github
 
