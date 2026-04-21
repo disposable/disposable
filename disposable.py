@@ -94,8 +94,8 @@ class remoteData():
                     line = line.encode('utf-8')
                 data.append(line)
             ws.close()
-        except IOError as e:
-            logging.exception(e)
+        except (IOError, Exception) as e:
+            logging.warning('WebSocket connection failed: %s', e)
             return b''
 
         return b'\n'.join(data)
@@ -185,8 +185,10 @@ class disposableHostGenerator():
         # currently blocked by cloudflare
         # {'type': 'json', 'src': 'https://mob1.temp-mail.org/request/domains/format/json'},
         {'type': 'json', 'src': 'https://api.internal.temp-mail.io/api/v2/domains'},
-        {'type': 'json', 'src': 'https://www.fakemail.net/index/index', 'scrape': True},
-        {'type': 'json', 'src': 'https://api.mailpoof.com/domains'},
+        # TODO: Currently broken (HTTP 500) - fakemail_net
+        # {'type': 'json', 'src': 'https://www.fakemail.net/index/index', 'scrape': True},
+        # no longer resolves
+        # {'type': 'json', 'src': 'https://api.mailpoof.com/domains'},
         {'type': 'file', 'src': 'blacklist.txt', 'ignore_not_exists': True},
         {
             'type': 'html',
@@ -214,7 +216,8 @@ class disposableHostGenerator():
             re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), 'scrape': True},
         # currently blocked by cloudflare - we probably need some kind of external service or undetected-chromedriver for this...
         # {'type': 'html', 'src': 'https://10minutemail.com/session/address', 'regex': re.compile(r""".+?@?([a-z0-9\.-]{1,128})""", re.I)},
-        {'type': 'html', 'src': 'https://correotemporal.org', 'regex': DOMAIN_SEARCH_RE},
+        # TODO: Currently broken (HTTP 403) - correotemporal
+        # {'type': 'html', 'src': 'https://correotemporal.org', 'regex': DOMAIN_SEARCH_RE},
         {'type': 'html', 'src': 'https://www.temporary-mail.net',
             'regex': re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
         {'type': 'html', 'src': 'https://nospam.today/home', 'regex': [
@@ -222,8 +225,9 @@ class disposableHostGenerator():
             re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
             re.compile(r"""\&quot;([^\&]+)\&quot;""")
         ]},
-        {'type': 'html', 'src': 'https://www.luxusmail.org',
-            'regex': re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
+        # TODO: Currently broken (HTTP 503) - luxusmail
+        # {'type': 'html', 'src': 'https://www.luxusmail.org',
+        #     'regex': re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
         {'type': 'html', 'src': 'https://lortemail.dk'},
         {'type': 'html', 'src': 'https://tempmail.plus/en/',
             'regex': re.compile(r"""<button type=\"button\" class=\"dropdown-item\">([^<]+)</button>""", re.I)},
@@ -231,8 +235,10 @@ class disposableHostGenerator():
             'regex': re.compile(r"""<option\s+value="([^"]+)">""", re.I)},
         {'type': 'html', 'src': 'https://tempr.email',
             'regex': re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
-        {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
-        {'type': 'custom', 'src': 'Tempmailo', 'scrape': True},
+        # TODO: Currently broken (WebSocket 404) - dropmail_ws
+        # {'type': 'ws', 'src': 'wss://dropmail.me/websocket'},
+        # TODO: Currently broken (Failed to fetch/parse) - tempmailo
+        # {'type': 'custom', 'src': 'Tempmailo', 'scrape': True},
         {
             'type': 'html',
             'src': 'https://yopmail.com/domain?d=all',
