@@ -40,7 +40,8 @@ class disposableHostGenerator:
         {"type": "list", "external": True, "src": "https://raw.githubusercontent.com/daisy1754/jp-disposable-emails/master/list.txt"},
         {"type": "list", "external": True, "src": "https://raw.githubusercontent.com/FGRibreau/mailchecker/master/list.txt"},
         {"type": "list", "external": True, "src": "https://raw.githubusercontent.com/7c/fakefilter/main/txt/data.txt"},
-        {"type": "list", "external": True, "src": "https://raw.githubusercontent.com/flotwig/disposable-email-addresses/master/domains.txt"},
+        # https://github.com/flotwig/disposable-email-addresses/ - no longer updated
+        # {"type": "list", "external": True, "src": "https://raw.githubusercontent.com/flotwig/disposable-email-addresses/master/domains.txt"},
         {"type": "sha1", "external": True, "src": "https://raw.githubusercontent.com/GeroldSetz/Mailinator-Domains/master/mailinator_domains_from_bdea.cc.txt"},
         {
             "type": "list",

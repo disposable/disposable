@@ -38,7 +38,7 @@ pyright:
 	pyright
 
 test:
-	pytest
+	pytest -m "not integration"
 
 test-unit:
 	pytest tests/unit/ --cov-fail-under=50
