@@ -1,7 +1,5 @@
 # 🗑 Disposable email domains
 
-[![npm](https://badge.fury.io/js/disposable-email.svg)](https://www.npmjs.com/package/disposable-email)
-[![GoDoc](https://godoc.org/github.com/disposable/disposable?status.svg)](https://godoc.org/github.com/disposable/disposable)
 [![GitHub last commit](https://img.shields.io/github/last-commit/disposable/disposable-email-domains?label=last%20update)](https://github.com/disposable/disposable-email-domains)
 
 
@@ -37,38 +35,6 @@ For more informations, please check Issue  [#81](https://github.com/disposable/d
 
 ```shell
 curl https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains_strict.txt
-```
-
-### JavaScript
-
-Install the npm package `disposable-email`. Validate synchronously or with a callback.
-
-```shell
-npm i --save disposable-email
-```
-
-```javascript
-var disposable = require('disposable-email');
-
-disposable.validate('gmail.com');
-// true
-
-disposable.validate('foo@gmail.com');
-// true
-
-disposable.validate('gmail.com', console.log);
-// undefined
-// null true
-```
-
-### Go
-
-```go
-import "github.com/disposable/disposable"
-
-if disposable.Domain("gmail.com") {
-    panic("Uh oh!")
-}
 ```
 
 ### Java

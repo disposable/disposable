@@ -9,21 +9,20 @@ jobs:
   build:
     name: Build list
     runs-on: ubuntu-latest
-    container:
-      image: "ghcr.io/${{ github.repository }}:latest"
-      credentials:
-        username: disposable
-        password: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Start unbound service
-        run: |
-          service unbound start
-          service unbound status
-      - name: Install uv
-        run: pip3 install --upgrade uv
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
       - name: Sync dependencies
         run: uv sync
+
       - name: Run script
-        run: uv run ./disposable.py --ns 127.0.0.1 --dnsport 5335 --source-map --skip-scrape --skip-src 'Tempmailo'
+        run: uv run ./disposable.py --source-map --skip-scrape --skip-src 'Tempmailo'
