@@ -81,8 +81,9 @@ To work with the Python tools in this repo using [uv](https://docs.astral.sh/uv/
 
 ```shell
 pip install --upgrade uv
-uv sync
+uv sync --dev
 uv run python disposable.py --help
+uv run disposable --help
 uv run ./.generate
 ```
 

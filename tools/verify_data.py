@@ -5,14 +5,12 @@ import sys
 import argparse
 import re
 
-ALLOWED_TYPES = ['free', 'paid', 'forwarding']
-ALLOWED_VERIFICATIONS = ['none', 'email', 'mobile', 'payment', 'other']
+ALLOWED_TYPES = ["free", "paid", "forwarding"]
+ALLOWED_VERIFICATIONS = ["none", "email", "mobile", "payment", "other"]
 
 
 # Regular expression for validating domain names
-HOSTNAME_RE = re.compile(
-    r"^(?!-)[A-Za-z0-9\-]{1,255}(?<!-)(\.[A-Za-z0-9\-]{2,64})+$"
-)
+HOSTNAME_RE = re.compile(r"^(?!-)[A-Za-z0-9\-]{1,255}(?<!-)(\.[A-Za-z0-9\-]{2,64})+$")
 
 
 def validate_mailservices(filename: str):
@@ -62,11 +60,11 @@ def validate_mailservices(filename: str):
             errors.append("Service {} is not a dictionary.".format(service_name))
             continue
 
-        if not type(service_options.get('hosts')) is list:
+        if not type(service_options.get("hosts")) is list:
             errors.append("Service {} has no hosts.".format(service_name))
             continue
 
-        for host in service_options['hosts']:
+        for host in service_options["hosts"]:
             if not type(host) is str:
                 errors.append("Host {} is not a string.".format(host))
                 continue
@@ -101,13 +99,13 @@ def validate_mailservices(filename: str):
 
                 mx_hosts.add(mx)
 
-        if service_options.get('type') and service_options['type'] not in ALLOWED_TYPES:
-            errors.append("Type {} for service {} is unknown.".format(service_options['type'], service_name))
+        if service_options.get("type") and service_options["type"] not in ALLOWED_TYPES:
+            errors.append("Type {} for service {} is unknown.".format(service_options["type"], service_name))
 
-        if service_options.get('signup_verification') and service_options['signup_verification'] not in ALLOWED_VERIFICATIONS:
-            errors.append("Verification {} for service {} is unknown.".format(service_options['signup_verification'], service_name))
+        if service_options.get("signup_verification") and service_options["signup_verification"] not in ALLOWED_VERIFICATIONS:
+            errors.append("Verification {} for service {} is unknown.".format(service_options["signup_verification"], service_name))
 
-        if service_options.get('mx_hosts') and type(service_options['mx_hosts']) is not list:
+        if service_options.get("mx_hosts") and type(service_options["mx_hosts"]) is not list:
             errors.append("MX hosts for service {} are not a list.".format(service_name))
 
     if errors:
