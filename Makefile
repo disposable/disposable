@@ -1,6 +1,6 @@
 # Makefile for disposable email domain generator
 
-.PHONY: all format check validate test test-unit test-integration test-all help reformat-ruff fix-ruff fix vulture complexity xenon bandit pyright
+.PHONY: all format check validate test test-unit test-integration test-sources test-all help reformat-ruff fix-ruff fix vulture complexity xenon bandit pyright
 
 # Default target: runs format and check
 all: validate test-unit
@@ -46,6 +46,9 @@ test-unit:
 test-integration:
 	pytest -m integration
 
+test-sources:
+	pytest tests/integration/test_sources.py -v --tb=short
+
 test-all:
 	pytest --tb=short
 
@@ -70,6 +73,7 @@ help:
 	@echo "  test          - Run all tests"
 	@echo "  test-unit     - Run unit tests only"
 	@echo "  test-integration - Run integration tests only"
+	@echo "  test-sources  - Run source verification tests (network required)"
 	@echo "  test-all      - Run all tests with short traceback"
 	@echo "  validate      - Run all validation checks"
 	@echo "  help          - Show this help message"

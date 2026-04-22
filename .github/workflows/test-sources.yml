@@ -1,0 +1,71 @@
+name: test sources
+
+on:
+  schedule:
+    # Run daily at 00:00 UTC to catch source failures early
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allow manual trigger with options
+    inputs:
+      source_filter:
+        description: 'Filter sources by name (optional)'
+        required: false
+        default: ''
+      fail_fast:
+        description: 'Stop on first failure'
+        required: false
+        default: 'false'
+
+permissions:
+  contents: read
+
+jobs:
+  test-sources:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: ${{ github.event.inputs.fail_fast == 'true' }}
+      matrix:
+        # Split sources across multiple jobs for faster execution
+        # Each job tests a subset of sources
+        group: [1, 2, 3, 4]
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v4
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Run source tests
+        env:
+          SOURCE_FILTER: ${{ github.event.inputs.source_filter }}
+        run: |
+          if [ -n "$SOURCE_FILTER" ]; then
+            echo "Running tests with filter: $SOURCE_FILTER"
+            uv run pytest tests/integration/test_sources.py -v -k "$SOURCE_FILTER" --tb=short
+          else
+            echo "Running all source tests (group ${{ matrix.group }})"
+            # Run with pytest-xdist for parallel execution within each job
+            uv run pytest tests/integration/test_sources.py -v --tb=short --dist=loadgroup
+          fi
+
+  test-summary:
+    runs-on: ubuntu-latest
+    needs: test-sources
+    if: always()
+    steps:
+      - name: Test Results Summary
+        run: |
+          echo "## Source Test Results" >> $GITHUB_STEP_SUMMARY
+          if [ "${{ needs.test-sources.result }}" == "success" ]; then
+            echo "All sources are working correctly" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "Some sources failed - check the logs above" >> $GITHUB_STEP_SUMMARY
+          fi

@@ -70,6 +70,10 @@ addopts = [
     "--cov-report=xml:coverage.xml",
 ]
 pythonpath = ["src"]
+markers = [
+    "integration: marks tests as integration tests (may use network)",
+    "network: marks tests as requiring network access",
+]
 
 [tool.pyright]
 exclude = ["**/__pycache__", "**/.venv", "**/tests", "**/dist", "**/build"]
