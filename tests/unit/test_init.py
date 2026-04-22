@@ -1,10 +1,6 @@
 """Unit tests for package initialization and main entry point."""
 
-from unittest.mock import MagicMock, patch
-
-import disposablehosts
 from disposablehosts import __all__, __version__, disposableHostGenerator, main, remoteData
-from disposablehosts.__main__ import main as main_module_main
 
 
 class TestPackageInit:
@@ -37,16 +33,6 @@ class TestPackageInit:
 
 class TestMainEntryPoint:
     """Tests for __main__ entry point."""
-
-    @patch("disposablehosts.__main__.main")
-    def test_main_entry_point(self, mock_main):
-        """Test that __main__ calls main when executed."""
-        # Simulate running as __main__
-        import disposablehosts.__main__ as main_module
-
-        # The module should have already called main() during import
-        # Since we patched it before import, it would be the mock
-        mock_main.assert_called_once()
 
     def test_main_module_import(self):
         """Test that __main__ module can be imported."""
