@@ -1,6 +1,6 @@
 [project]
 name = "disposable"
-version = "0.3"
+version = "0.4"
 description = "Generate a list of disposable email domains"
 readme = "README.md"
 requires-python = ">=3.10,<4.0"
