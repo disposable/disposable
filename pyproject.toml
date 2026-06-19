@@ -38,6 +38,7 @@ dev = [
     "pyright>=1.1.408",
     "pytest>=9.0.3",
     "pytest-cov>=7.1.0",
+    "pytest-xdist>=3.6.1",
     "radon>=5.1.0",
     "ruff>=0.15.11",
     "vulture>=2.16",
