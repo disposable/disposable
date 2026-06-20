@@ -118,7 +118,6 @@ class disposableHostGenerator:
                 re.compile(r"""\&quot;([^\&]+)\&quot;"""),
             ],
         },
-        {"type": "html", "src": "https://lortemail.dk"},
         {
             "type": "html",
             "src": "https://tempmail.plus/en/",
