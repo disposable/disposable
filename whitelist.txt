@@ -420,3 +420,7 @@ centraldecomunicacion.es
 # Forward Email - legitimate open-source email service, not disposable
 # https://forwardemail.net - IMAP/SMTP/CalDAV email hosting for custom domains
 forwardemail.net
+
+# ImprovMX - legitimate email forwarding / SMTP service, not disposable
+# https://improvmx.com - permanent email forwarding for custom domains
+improvmx.com
