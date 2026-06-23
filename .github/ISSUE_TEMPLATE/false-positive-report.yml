@@ -1,0 +1,53 @@
+name: False positive report / Domain removal request
+description: Request removal of a non-disposable domain from the blocklist
+title: "[NONDISP] "
+labels:
+  - false-positive
+assignees:
+  - smeinecke
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Please note that this list serves as an **aggregator of multiple external lists** and does not directly manage the sourcing of records.
+
+        Before submitting, use the [lookup tool](https://disposable.github.io/disposable-email-domains/lookup) to verify your domain is listed and identify its source. If the source is not managed by this repository, you must contact that source directly — we cannot remove externally managed entries.
+
+  - type: checkboxes
+    id: lookup-completed
+    attributes:
+      label: Pre-submission checklist
+      description: Before opening this issue, please confirm you have completed these steps.
+      options:
+        - label: I have used the [lookup tool](https://disposable.github.io/disposable-email-domains/lookup) and confirmed my domain is listed and identified the source of the record.
+          required: true
+        - label: If the source is external (not managed by this repository), I have already reached out to the source directly.
+          required: false
+    validations:
+      required: true
+
+  - type: input
+    id: domain
+    attributes:
+      label: Domain name
+      description: The domain you want removed from the blocklist.
+      placeholder: example.com
+    validations:
+      required: true
+
+  - type: input
+    id: source
+    attributes:
+      label: Source list
+      description: The source URL where your domain is listed (as shown in the lookup tool).
+      placeholder: https://...
+    validations:
+      required: true
+
+  - type: textarea
+    id: additional-info
+    attributes:
+      label: Additional information
+      description: Any extra context about why this domain should be removed (e.g., ownership proof, service description).
+    validations:
+      required: false

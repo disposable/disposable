@@ -1,0 +1,24 @@
+name: validate false-positive report
+
+on:
+  issues:
+    types: [opened, edited]
+
+jobs:
+  validate:
+    if: contains(github.event.issue.labels.*.name, 'false-positive')
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+      contents: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Validate report
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 tools/validate_false_positive.py \
+            --issue-number "${{ github.event.issue.number }}" \
+            --issue-body "${{ github.event.issue.body }}"
