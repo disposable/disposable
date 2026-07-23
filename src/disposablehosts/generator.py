@@ -50,6 +50,7 @@ class disposableHostGenerator:
         },
         {"type": "json", "src": "https://inboxes.com/api/v2/domain"},
         {"type": "json", "src": "https://api.internal.temp-mail.io/api/v2/domains"},
+        {"type": "json", "src": "https://mailforspams.com/api/v1/domains"},
         # fakemail.net - working again (HTTP 200)
         {"type": "html", "src": "https://www.fakemail.net/index/index", "regex": DOMAIN_SEARCH_RE},
         # mailpoof.com - DNS NXDOMAIN, service permanently offline
