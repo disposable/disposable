@@ -28,6 +28,6 @@
     "mocha": "^3.1.2"
   },
   "dependencies": {
-    "axios": "0.30.2"
+    "axios": "1.19.0"
   }
 }
