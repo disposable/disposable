@@ -142,6 +142,14 @@ def post_comment(issue_number: str, comment: str) -> None:
     )
 
 
+def close_issue(issue_number: str, comment: str) -> None:
+    """Close the issue with a final comment using the GitHub CLI."""
+    subprocess.run(
+        ["gh", "issue", "close", issue_number, "--reason", "not planned", "--comment", comment],
+        check=True,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(
         description="Validate a false-positive issue and post an automated response.",
@@ -174,7 +182,10 @@ def main() -> None:
         sys.exit(0)
 
     comment = build_comment(domain_found, has_managed_source, domain, claimed_source, actual_sources)
-    post_comment(args.issue_number, comment)
+    if domain_found and has_managed_source:
+        post_comment(args.issue_number, comment)
+    else:
+        close_issue(args.issue_number, comment)
 
 
 if __name__ == "__main__":
