@@ -608,16 +608,19 @@ class disposableHostGenerator:
         """Fetch disposable email domains from tempmail.ninja via its Socket.IO backend.
 
         The webapp is a Nuxt SPA that talks to a Socket.IO service at
-        tm-app.solucioneswc.com:2083. The `get_domains` event (unauthenticated)
-        returns the selectable domain pool for a given `domainType`; we query a
-        small range and merge all pools. `generate_temp_mail` requires a guest
-        session token, so the auto-assigned pool is not reachable this way.
+        tm-app.solucioneswc.com:2083. The `get_domains` event returns the
+        selectable domain pool for a given `domainType`; we query a small
+        range and merge all pools. The auto-assigned mailbox pool is separate:
+        `get_guest_user_data` with a null token creates a guest session bound
+        to the socket, after which `generate_temp_mail` returns a fresh
+        mailbox whose domain we also collect.
 
         Returns:
             List of domain strings, or None if the backend is unreachable.
         """
         ws_url = "wss://tm-app.solucioneswc.com:2083/socket.io/?locale=en&EIO=4&transport=websocket"
         domain_types = range(6)
+        gen_id = len(domain_types) + 1
         domains: Set[str] = set()
         try:
             ws = create_connection(ws_url, origin="https://tempmail.ninja", timeout=15)
@@ -625,12 +628,26 @@ class disposableHostGenerator:
                 ws.recv()  # Engine.IO open packet: 0{...}
                 ws.send("40")  # Socket.IO connect
                 ws.recv()  # connect ack: 40{...} (or 44 error)
-                for req_id, domain_type in enumerate(domain_types):
+
+                # bootstrap a guest session so generate_temp_mail works
+                ws.send('420["get_guest_user_data",{"token":null}]')
+                ws.settimeout(10)
+                try:
+                    while True:
+                        if ws.recv().startswith("43"):
+                            break
+                except Exception:
+                    pass  # session failed, get_domains still works
+
+                for req_id, domain_type in enumerate(domain_types, 1):
                     ws.send(f'42{req_id}["get_domains",{{"domainType":{domain_type}}}]')
+                ws.send(f'42{gen_id}["generate_temp_mail"]')
+
                 ws.settimeout(15)
                 acks = 0
+                expected = len(domain_types) + 1
                 deadline = time.time() + 20
-                while acks < len(domain_types) and time.time() < deadline:
+                while acks < expected and time.time() < deadline:
                     try:
                         msg = ws.recv()
                     except Exception:
@@ -638,15 +655,20 @@ class disposableHostGenerator:
                     if msg == "2":  # Engine.IO ping -> pong
                         ws.send("3")
                         continue
-                    m = re.match(r"43\d+(\[.*\])$", msg, re.S)
+                    m = re.match(r"43(\d+)(\[.*\])$", msg, re.S)
                     if not m:
                         continue  # server events like connection_warning
                     acks += 1
                     try:
-                        payload = json.loads(m.group(1))
+                        payload = json.loads(m.group(2))
                     except ValueError:
                         continue
                     if not payload or not isinstance(payload[0], dict):
+                        continue
+                    if int(m.group(1)) == gen_id:
+                        domain = (payload[0].get("emailData") or {}).get("domain")
+                        if domain:
+                            domains.add(domain.lower())
                         continue
                     for entry in payload[0].get("domains") or []:
                         name = entry.get("name")
