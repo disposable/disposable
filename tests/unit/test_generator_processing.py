@@ -354,3 +354,42 @@ class TestSourceHostnameArtifacts:
 
         assert result == (2, 2)
         assert "ample.com" in gen.domains
+
+
+class TestCustomSources:
+    """Tests for custom source processors."""
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_tempamail(self, mock_post):
+        """Tempamail source creates a client then fetches the domain list."""
+        gen = disposableHostGenerator()
+        mock_post.side_effect = [
+            type("R", (), {"json": lambda s: {"client": {"uuid": "u-1"}}})(),
+            type("R", (), {"json": lambda s: {"domains": [{"name": "ogzmail.com"}, {"name": "ozvmail.com"}, {"tld": "com"}]}})(),
+        ]
+        assert gen._processTempamail() == ["ogzmail.com", "ozvmail.com"]
+        assert mock_post.call_count == 2
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_tempamail_failure(self, mock_post):
+        """Tempamail source returns None on request failure."""
+        gen = disposableHostGenerator()
+        mock_post.side_effect = Exception("boom")
+        assert gen._processTempamail() is None
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_dustmail(self, mock_post, monkeypatch):
+        """Dustmail source reads meta.available_domains via API key."""
+        monkeypatch.setenv("DUSTMAIL_API_KEY", "dm_live_test")
+        gen = disposableHostGenerator()
+        mock_post.return_value = type("R", (), {"json": lambda s: {"meta": {"available_domains": ["dustmail.net", "x.example"]}}})()
+        assert gen._processDustmail() == ["dustmail.net", "x.example"]
+
+    def test_dustmail_source_requires_api_key(self, monkeypatch):
+        """Dustmail source is only registered when DUSTMAIL_API_KEY is set."""
+        monkeypatch.delenv("DUSTMAIL_API_KEY", raising=False)
+        gen = disposableHostGenerator()
+        assert not any(s.get("src") == "Dustmail" for s in gen.sources)
+        monkeypatch.setenv("DUSTMAIL_API_KEY", "dm_live_test")
+        gen2 = disposableHostGenerator()
+        assert any(s.get("src") == "Dustmail" for s in gen2.sources)

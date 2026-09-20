@@ -25,4 +25,6 @@ jobs:
         run: uv sync
 
       - name: Run script
+        env:
+          DUSTMAIL_API_KEY: ${{ secrets.DUSTMAIL_API_KEY }}
         run: uv run ./disposable.py --source-map --skip-scrape --skip-src 'Tempmailo'
