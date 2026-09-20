@@ -420,3 +420,7 @@ centraldecomunicacion.es
 # Forward Email - legitimate open-source email service, not disposable
 # https://forwardemail.net - IMAP/SMTP/CalDAV email hosting for custom domains
 forwardemail.net
+
+# scrape artifacts of emailfake.com hostname - https://github.com/disposable/disposable/issues/290
+fake.com
+ke.com

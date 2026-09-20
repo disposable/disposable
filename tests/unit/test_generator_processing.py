@@ -289,3 +289,68 @@ class TestFallbackDomainExtraction:
         result = gen._postprocess_data(source, data, lines)
 
         assert result is False
+
+
+class TestSourceHostnameArtifacts:
+    """Tests for filtering hostname suffix artifacts from html sources.
+
+    Regression test for https://github.com/disposable/disposable/issues/290:
+    scrapes can emit trailing substrings of the source's own hostname
+    (e.g. "fake.com", "ke.com", "e.com" from emailfake.com).
+    """
+
+    def test_html_source_drops_hostname_suffixes(self):
+        """Proper suffixes of the source hostname are dropped; the hostname itself is kept."""
+        gen = disposableHostGenerator()
+        source = {"type": "html", "src": "https://emailfake.com", "scrape": True}
+        data = b""
+        lines = ["emailfake.com", "fake.com", "ilfake.com", "mailfake.com", "ke.com", "e.com", "realdomain.com"]
+
+        result = gen._postprocess_data(source, data, lines)
+
+        assert result is not False
+        assert "emailfake.com" in gen.domains
+        assert "realdomain.com" in gen.domains
+        for artifact in ("fake.com", "ilfake.com", "mailfake.com", "ke.com", "e.com"):
+            assert artifact not in gen.domains
+            assert artifact not in gen.scrape
+
+    def test_html_source_keeps_apex_domain(self):
+        """Apex domain of a www.* source host is a legit self-reference, not an artifact."""
+        gen = disposableHostGenerator()
+        source = {"type": "html", "src": "https://www.fakemail.net/index/index", "regex": None}
+        data = b""
+        lines = ["fakemail.net", "www.fakemail.net", "mail.net", "realdomain.com"]
+
+        result = gen._postprocess_data(source, data, lines)
+
+        assert result is not False
+        assert "fakemail.net" in gen.domains
+        assert "realdomain.com" in gen.domains
+        assert "mail.net" not in gen.domains
+
+    def test_html_source_keeps_unrelated_suffixes(self):
+        """Domains that are not suffixes of the source hostname are kept."""
+        gen = disposableHostGenerator()
+        source = {"type": "html", "src": "https://tempm.com", "scrape": True}
+        data = b""
+        lines = ["tempm.com", "someother.com", "mail.tempm.com"]
+
+        result = gen._postprocess_data(source, data, lines)
+
+        assert result is not False
+        assert "tempm.com" in gen.domains
+        assert "someother.com" in gen.domains
+        assert "mail.tempm.com" in gen.domains
+
+    def test_non_html_source_not_filtered(self):
+        """List sources are unaffected by the hostname suffix filter."""
+        gen = disposableHostGenerator()
+        source = {"type": "list", "src": "https://example.com"}
+        data = b""
+        lines = ["ample.com", "example.com"]
+
+        result = gen._postprocess_data(source, data, lines)
+
+        assert result == (2, 2)
+        assert "ample.com" in gen.domains
