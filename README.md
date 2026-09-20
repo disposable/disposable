@@ -66,6 +66,12 @@ Fetched 5196 domains and 6593 hashes
  - 76 hash(es) removed
 ```
 
+Some sources require an API key and are only enabled when the corresponding environment variable is set:
+
+| Environment variable | Source | How to get a key |
+|----------------------|--------|------------------|
+| `DUSTMAIL_API_KEY` | [dustmail.net](https://dustmail.net) shared inbox domains | Register at dustmail.net, then create a `dm_live_` key in the Dashboard (free tier is sufficient) |
+
 ## External Sources:
 |Source|Status|
 |------|--:|
