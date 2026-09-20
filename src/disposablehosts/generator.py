@@ -7,6 +7,7 @@ import logging
 import re
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
+from urllib.parse import urlparse
 
 import tldextract
 
@@ -306,6 +307,12 @@ class disposableHostGenerator:
         if not lines_filtered:
             fallback_lines = [match.lower().strip(" .,;@") for match in DOMAIN_SEARCH_RE.findall(str(data))]
             lines_filtered = list(filter(self.check_valid_domains, fallback_lines))
+
+        if source["type"] == "html":
+            src_host = urlparse(str(source.get("src", ""))).hostname
+            if src_host:
+                src_host = src_host.lower()
+                lines_filtered = [host for host in lines_filtered if host == src_host or not src_host.endswith(host)]
 
         if source["type"] in ("whitelist", "whitelist_file", "sha1"):
             for host in lines_filtered:
