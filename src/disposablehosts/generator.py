@@ -4,11 +4,13 @@ import concurrent.futures
 import hashlib
 import json
 import logging
+import os
 import re
 import time
 from typing import Any, Dict, List, Optional, Set, Tuple, Union
 from urllib.parse import urlparse
 
+import httpx
 import tldextract
 
 from .constants import (
@@ -65,6 +67,7 @@ class disposableHostGenerator:
         #     "regex": re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
         # tempmailo.com - cloudflare challenge, can't scrape
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
+        {"type": "custom", "src": "Tempamail"},
         # correotemporal.org - redirects to tempmail.ninja (HTTP 301)
         # {"type": "html", "src": "https://correotemporal.org", "regex": DOMAIN_SEARCH_RE},
         {"type": "file", "src": "blacklist.txt", "ignore_not_exists": True},
@@ -182,6 +185,9 @@ class disposableHostGenerator:
 
         if self.options.get("file"):
             self.sources.insert(0, {"type": "file", "src": self.options["file"]})
+
+        if os.environ.get("DUSTMAIL_API_KEY"):
+            self.sources.append({"type": "custom", "src": "Dustmail"})
 
         # Load remote URL if no custom list is defined
         if self.options.get("whitelist") is None:
@@ -456,6 +462,45 @@ class disposableHostGenerator:
             lines.append(domain)
 
         return lines
+
+    def _processTempamail(self) -> Optional[List[str]]:
+        """Fetch disposable email domains from the tempamail.com webapp API.
+
+        Returns:
+            List of domain strings, or None if request fails.
+        """
+        try:
+            client = httpx.post(
+                "https://api.tempamail.com/webapp/client/create",
+                json={"app_uuid": "a5x-cj6a-ka1q"},
+                timeout=15,
+            ).json()
+            res = httpx.post(
+                "https://api.tempamail.com/webapp/domains",
+                json={"uuid": client["client"]["uuid"]},
+                timeout=15,
+            ).json()
+            return [d["name"] for d in res.get("domains", []) if d.get("name")]
+        except Exception as e:
+            logging.warning("Failed to fetch tempamail.com domains: %s", e)
+            return None
+
+    def _processDustmail(self) -> Optional[List[str]]:
+        """Fetch shared inbox domains from dustmail.net (requires DUSTMAIL_API_KEY).
+
+        Returns:
+            List of domain strings, or None if request fails.
+        """
+        try:
+            res = httpx.post(
+                "https://dustmail.net/api/v1/inbox",
+                headers={"Authorization": f"Bearer {os.environ['DUSTMAIL_API_KEY']}"},
+                timeout=15,
+            ).json()
+            return [d for d in res.get("meta", {}).get("available_domains", []) if d]
+        except Exception as e:
+            logging.warning("Failed to fetch dustmail.net domains: %s", e)
+            return None
 
     def read_files(self) -> None:
         """Read and compare to current (old) domains file."""
