@@ -64,7 +64,7 @@ class TestFetchHttp:
         monkeypatch.setenv("FLARESOLVERR_URL", "http://127.0.0.1:8191")
         mock_response = MagicMock()
         mock_response.status_code = 403
-        mock_response.read.return_value = b'<html><title>Just a moment...</title>challenges.cloudflare.com</html>'
+        mock_response.read.return_value = b"<html><title>Just a moment...</title>challenges.cloudflare.com</html>"
         mock_fetch_raw.return_value = mock_response
         mock_flare.return_value = b"solved content"
 
