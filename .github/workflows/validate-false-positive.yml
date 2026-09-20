@@ -18,7 +18,9 @@ jobs:
       - name: Validate report
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
         run: |
           python3 tools/validate_false_positive.py \
-            --issue-number "${{ github.event.issue.number }}" \
-            --issue-body "${{ github.event.issue.body }}"
+            --issue-number "$ISSUE_NUMBER" \
+            --issue-body "$ISSUE_BODY"
