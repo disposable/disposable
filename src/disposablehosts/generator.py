@@ -71,7 +71,8 @@ class disposableHostGenerator:
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
         {"type": "custom", "src": "Tempamail"},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True},
-        {"type": "custom", "src": "Tmailor", "scrape": True},
+        # tmailor.com - cloudflare challenge, API returns HTTP 403
+        # {"type": "custom", "src": "Tmailor", "scrape": True},
         # correotemporal.org - redirects to tempmail.ninja (HTTP 301)
         # {"type": "html", "src": "https://correotemporal.org", "regex": DOMAIN_SEARCH_RE},
         {"type": "file", "src": "blacklist.txt", "ignore_not_exists": True},
