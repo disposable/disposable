@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 import httpx
 import tldextract
+from websocket import create_connection
 
 from .constants import (
     DISPOSABLE_GREYLIST_URL,
@@ -20,6 +21,7 @@ from .constants import (
     DOMAIN_SEARCH_RE,
     generate_random_string,
 )
+from .remote_data import remoteData
 from .sources.file import fetch_file_source
 from .sources.http import fetch_http_source
 from .sources.websocket import fetch_websocket_source
@@ -60,15 +62,18 @@ class disposableHostGenerator:
         # {"type": "json", "src": "https://api.mailpoof.com/domains"},
         # dropmail.me - WebSocket URL changed to /api/graphql/<token>/websocket, needs new implementation
         # {"type": "ws", "src": "wss://dropmail.me/websocket"},
-        # tempmail.ninja - requires cloudflare bypass (TODO: implement workaround)
-        # {"type": "html", "src": "https://tempmail.ninja/en"},
+        # tempmail.ninja - Nuxt SPA backed by a Socket.IO service (no domains in markup)
+        {"type": "custom", "src": "TempmailNinja", "scrape": True},
         # tmp.al - luxusmail.org redirects here (HTTP 301), now an Android app
         # TODO: Investigate Android app - may need new extraction method
         # {"type": "html", "src": "https://tmp.al",
         #     "regex": re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
-        # tempmailo.com - cloudflare challenge, can't scrape
+        # tempmailo.com - interactive Turnstile challenge, flaresolverr cannot solve
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
         {"type": "custom", "src": "Tempamail"},
+        {"type": "custom", "src": "AdGuardTempMail", "scrape": True},
+        # tmailor.com - cloudflare challenge, API returns HTTP 403
+        # {"type": "custom", "src": "Tmailor", "scrape": True},
         # correotemporal.org - redirects to tempmail.ninja (HTTP 301)
         # {"type": "html", "src": "https://correotemporal.org", "regex": DOMAIN_SEARCH_RE},
         {"type": "file", "src": "blacklist.txt", "ignore_not_exists": True},
@@ -502,6 +507,188 @@ class disposableHostGenerator:
         except Exception as e:
             logging.warning("Failed to fetch dustmail.net domains: %s", e)
             return None
+
+    def _processAdGuardTempMail(self) -> Optional[List[str]]:
+        """Fetch a list of disposable email domains from AdGuard Temp Mail.
+
+        Note: AdGuard Temp Mail uses dynamic JavaScript loading and may require
+        CAPTCHA, so we maintain a list of known domains from this service.
+
+        Returns:
+            List of domain strings.
+        """
+        # Known domains used by AdGuard Temp Mail service
+        # These are observed domains from the service
+        known_domains = [
+            "protectsmail.net",
+            "rapidletter.net",
+            "concu.net",
+        ]
+
+        # Try to fetch additional domains from the page if possible
+        try:
+            data = remoteData.fetch_http("https://tempmail.adguard.com/", timeout=5)
+            if data:
+                html_content = data.decode("utf-8")
+
+                # Look for domain patterns in the HTML
+                domain_matches = re.findall(r"@([a-z0-9.-]+\.[a-z]{2,})", html_content, re.I)
+                if domain_matches:
+                    known_domains.extend(domain_matches)
+
+                # Also check for domains in JavaScript variables or data attributes
+                js_domains = re.findall(
+                    r'domain["\']?\s*:\s*["\']([a-z0-9.-]+\.[a-z]{2,})["\']',
+                    html_content,
+                    re.I,
+                )
+                if js_domains:
+                    known_domains.extend(js_domains)
+        except Exception as e:
+            logging.debug("Could not fetch dynamic domains from AdGuard: %s", e)
+
+        return list(set(known_domains))
+
+    def _processTmailor(self) -> Optional[List[str]]:
+        """Fetch a list of disposable email domains from tmailor.com.
+
+        Note: Tmailor uses dynamic domain generation. This scraper attempts to
+        fetch domains from the service by sampling newly created addresses.
+
+        Returns:
+            List of domain strings.
+        """
+        headers = {
+            "accept": "*/*",
+            "accept-language": "en-US,en;q=0.5",
+            "content-type": "application/json",
+            "origin": "https://tmailor.com",
+            "referer": "https://tmailor.com/en/",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0",
+        }
+
+        max_attempts = 15
+        domains: List[str] = []
+
+        for _ in range(max_attempts):
+            payload = {
+                "action": "newemail",
+                "curentToken": "",
+            }
+            try:
+                data = remoteData.fetch_http_post("https://tmailor.com/api", headers=headers, json_data=payload, timeout=8)
+            except Exception as exc:  # pragma: no cover - network quirks
+                logging.debug("Failed to talk to tmailor API: %s", exc)
+                continue
+
+            if not data:
+                continue
+
+            try:
+                resp = json.loads(data.decode("utf-8"))
+            except Exception as exc:
+                logging.debug("Invalid JSON from tmailor: %s", exc)
+                continue
+
+            email = resp.get("email")
+            if not email:
+                continue
+
+            _, _, domain = email.partition("@")
+            if domain and self.check_valid_domains(domain):
+                domains.append(domain)
+
+        domains = list(set(domains))
+        if not domains:
+            logging.warning("No domains found for tmailor.com")
+
+        return domains
+
+    def _processTempmailNinja(self) -> Optional[List[str]]:
+        """Fetch disposable email domains from tempmail.ninja via its Socket.IO backend.
+
+        The webapp is a Nuxt SPA that talks to a Socket.IO service at
+        tm-app.solucioneswc.com:2083. The `get_domains` event returns the
+        selectable domain pool for a given `domainType`; we query a small
+        range and merge all pools. The auto-assigned mailbox pool is separate:
+        `get_guest_user_data` with a null token creates a guest session bound
+        to the socket, after which `generate_temp_mail` returns a fresh
+        mailbox whose domain we also collect.
+
+        Returns:
+            List of domain strings, or None if the backend is unreachable.
+        """
+        ws_url = "wss://tm-app.solucioneswc.com:2083/socket.io/?locale=en&EIO=4&transport=websocket"
+        domain_types = range(6)
+        gen_id = len(domain_types) + 1
+        domains: Set[str] = set()
+        try:
+            ws = create_connection(ws_url, origin="https://tempmail.ninja", timeout=15)
+            try:
+
+                def recv_text() -> str:
+                    m = ws.recv()
+                    return m.decode("utf-8", "replace") if isinstance(m, bytes) else m
+
+                ws.recv()  # Engine.IO open packet: 0{...}
+                ws.send("40")  # Socket.IO connect
+                ws.recv()  # connect ack: 40{...} (or 44 error)
+
+                # bootstrap a guest session so generate_temp_mail works
+                ws.send('420["get_guest_user_data",{"token":null}]')
+                ws.settimeout(10)
+                try:
+                    msg = ""
+                    while not msg.startswith("43"):
+                        msg = recv_text()
+                except Exception as e:
+                    logging.debug("tempmail.ninja guest session bootstrap failed: %s", e)
+
+                for req_id, domain_type in enumerate(domain_types, 1):
+                    ws.send(f'42{req_id}["get_domains",{{"domainType":{domain_type}}}]')
+                ws.send(f'42{gen_id}["generate_temp_mail"]')
+
+                ws.settimeout(15)
+                acks = 0
+                expected = len(domain_types) + 1
+                deadline = time.time() + 20
+                while acks < expected and time.time() < deadline:
+                    try:
+                        msg = recv_text()
+                    except Exception:
+                        break
+                    if msg == "2":  # Engine.IO ping -> pong
+                        ws.send("3")
+                        continue
+                    m = re.match(r"43(\d+)(\[.*\])$", msg, re.S)
+                    if not m:
+                        continue  # server events like connection_warning
+                    acks += 1
+                    try:
+                        payload = json.loads(m.group(2))
+                    except ValueError:
+                        continue
+                    if not payload or not isinstance(payload[0], dict):
+                        continue
+                    if int(m.group(1)) == gen_id:
+                        domain = (payload[0].get("emailData") or {}).get("domain")
+                        if domain:
+                            domains.add(domain.lower())
+                        continue
+                    for entry in payload[0].get("domains") or []:
+                        name = entry.get("name")
+                        if name and entry.get("status") == 1:
+                            domains.add(name.lower())
+            finally:
+                ws.close()
+        except Exception as e:
+            logging.warning("Failed to fetch tempmail.ninja domains: %s", e)
+            return None
+
+        if not domains:
+            logging.warning("No domains found for tempmail.ninja")
+
+        return sorted(domains)
 
     def read_files(self) -> None:
         """Read and compare to current (old) domains file."""

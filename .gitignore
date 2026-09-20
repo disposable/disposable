@@ -325,3 +325,4 @@ domains_strict_mx.txt
 
 .venv/
 .vscode/settings.json
+.playwright-mcp/

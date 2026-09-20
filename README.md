@@ -72,6 +72,8 @@ Some sources require an API key and are only enabled when the corresponding envi
 |----------------------|--------|------------------|
 | `DUSTMAIL_API_KEY` | [dustmail.net](https://dustmail.net) shared inbox domains | Register at dustmail.net, then create a `dm_live_` key in the Dashboard (free tier is sufficient) |
 
+If `FLARESOLVERR_URL` points to a running [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) instance (e.g. `http://127.0.0.1:8191`), sources that answer with a Cloudflare challenge page are automatically retried through it.
+
 ## External Sources:
 |Source|Status|
 |------|--:|

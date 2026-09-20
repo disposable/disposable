@@ -57,6 +57,35 @@ class TestFetchHttp:
         result = remoteData.fetch_http("https://example.com")
         assert result == b""
 
+    @patch("disposablehosts.remote_data.remoteData.fetch_flaresolverr")
+    @patch("disposablehosts.remote_data.remoteData.fetch_http_raw")
+    def test_fetch_http_falls_back_to_flaresolverr_on_challenge(self, mock_fetch_raw, mock_flare, monkeypatch):
+        """fetch_http retries via FlareSolverr when Cloudflare challenge is detected."""
+        monkeypatch.setenv("FLARESOLVERR_URL", "http://127.0.0.1:8191")
+        mock_response = MagicMock()
+        mock_response.status_code = 403
+        mock_response.read.return_value = b"<html><title>Just a moment...</title>challenges.cloudflare.com</html>"
+        mock_fetch_raw.return_value = mock_response
+        mock_flare.return_value = b"solved content"
+
+        result = remoteData.fetch_http("https://example.com")
+        assert result == b"solved content"
+        mock_flare.assert_called_once_with("https://example.com")
+
+    @patch("disposablehosts.remote_data.remoteData.fetch_flaresolverr")
+    @patch("disposablehosts.remote_data.remoteData.fetch_http_raw")
+    def test_fetch_http_returns_challenge_body_without_flaresolverr(self, mock_fetch_raw, mock_flare, monkeypatch):
+        """fetch_http returns the challenge body when FLARESOLVERR_URL is unset."""
+        monkeypatch.delenv("FLARESOLVERR_URL", raising=False)
+        mock_response = MagicMock()
+        mock_response.status_code = 403
+        mock_response.read.return_value = b"Just a moment challenges.cloudflare.com"
+        mock_fetch_raw.return_value = mock_response
+
+        result = remoteData.fetch_http("https://example.com")
+        assert result == b"Just a moment challenges.cloudflare.com"
+        mock_flare.assert_not_called()
+
     @patch("disposablehosts.remote_data.remoteData.fetch_http_raw")
     def test_fetch_http_forwards_parameters(self, mock_fetch_raw):
         """Test fetch_http forwards parameters to fetch_http_raw."""
