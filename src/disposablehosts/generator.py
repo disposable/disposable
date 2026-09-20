@@ -633,11 +633,11 @@ class disposableHostGenerator:
                 ws.send('420["get_guest_user_data",{"token":null}]')
                 ws.settimeout(10)
                 try:
-                    while True:
-                        if ws.recv().startswith("43"):
-                            break
-                except Exception:
-                    pass  # session failed, get_domains still works
+                    msg = ""
+                    while not msg.startswith("43"):
+                        msg = ws.recv()
+                except Exception as e:
+                    logging.debug("tempmail.ninja guest session bootstrap failed: %s", e)
 
                 for req_id, domain_type in enumerate(domain_types, 1):
                     ws.send(f'42{req_id}["get_domains",{{"domainType":{domain_type}}}]')

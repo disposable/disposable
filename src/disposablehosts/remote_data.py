@@ -146,7 +146,7 @@ class remoteData:
         """Check whether a response is a Cloudflare challenge page."""
         if res is None or getattr(res, "status_code", None) not in (403, 503):
             return False
-        return b"challenges.cloudflare.com" in body or b"Just a moment" in body
+        return b"cdn-cgi/challenge-platform" in body or b"Just a moment" in body
 
     @staticmethod
     def fetch_flaresolverr(url: str, timeout: int = 60) -> bytes:
