@@ -2,7 +2,7 @@
 
 import logging
 import time
-from typing import Dict, Optional
+from typing import Any, Dict, Optional
 
 import httpx
 from websocket import create_connection
@@ -135,3 +135,58 @@ class remoteData:
         """
         res = remoteData.fetch_http_raw(url, headers, timeout, max_retry)
         return (res and res.read()) or b""
+
+    @staticmethod
+    def fetch_http_post(
+        url: str,
+        headers: Optional[Dict[str, str]] = None,
+        data: Optional[Dict[str, Any]] = None,
+        json_data: Optional[Dict[str, Any]] = None,
+        timeout: Optional[int] = None,
+        max_retry: Optional[int] = None,
+    ) -> bytes:
+        """Send an HTTP POST request and return the response body as bytes.
+
+        Args:
+            url: The URL to POST to.
+            headers: Optional headers to include in the request.
+            data: Optional form data to send in the request body.
+            json_data: Optional JSON data to send in the request body.
+            timeout: Optional timeout for the request in seconds.
+            max_retry: Optional maximum number of retries if the request fails.
+
+        Returns:
+            The content of the response as bytes.
+        """
+        if not headers:
+            headers = {}
+
+        if timeout is None:
+            timeout = 3
+
+        if max_retry is None:
+            max_retry = 5
+
+        headers.setdefault(
+            "User-Agent",
+            "Mozilla/5.0 (Windows NT 10.0; rv:109.0) Gecko/20100101 Firefox/118.0",
+        )
+        headers.setdefault("Accept", "application/json, text/plain, */*")
+
+        retry = 0
+        with httpx.Client(http2=True, verify=False) as client:  # nosec B501 - Required for scraping various email services with self-signed certs
+            while retry < max_retry:
+                try:
+                    res = client.post(url, headers=headers, timeout=timeout, data=data, json=json_data)
+                    return res.read()
+                except Exception as e:
+                    retry += 1
+                    logging.error(e)
+                    if RETRY_ERRORS_RE.search(str(e)) and retry < max_retry:
+                        time.sleep(1)
+                        continue
+
+                    logging.warning("POST %s failed, see error: %s", url, e)
+                    break
+
+        return b""

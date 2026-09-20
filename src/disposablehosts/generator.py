@@ -20,6 +20,7 @@ from .constants import (
     DOMAIN_SEARCH_RE,
     generate_random_string,
 )
+from .remote_data import remoteData
 from .sources.file import fetch_file_source
 from .sources.http import fetch_http_source
 from .sources.websocket import fetch_websocket_source
@@ -69,6 +70,8 @@ class disposableHostGenerator:
         # tempmailo.com - cloudflare challenge, can't scrape
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
         {"type": "custom", "src": "Tempamail"},
+        {"type": "custom", "src": "AdGuardTempMail", "scrape": True},
+        {"type": "custom", "src": "Tmailor", "scrape": True},
         # correotemporal.org - redirects to tempmail.ninja (HTTP 301)
         # {"type": "html", "src": "https://correotemporal.org", "regex": DOMAIN_SEARCH_RE},
         {"type": "file", "src": "blacklist.txt", "ignore_not_exists": True},
@@ -502,6 +505,102 @@ class disposableHostGenerator:
         except Exception as e:
             logging.warning("Failed to fetch dustmail.net domains: %s", e)
             return None
+
+    def _processAdGuardTempMail(self) -> Optional[List[str]]:
+        """Fetch a list of disposable email domains from AdGuard Temp Mail.
+
+        Note: AdGuard Temp Mail uses dynamic JavaScript loading and may require
+        CAPTCHA, so we maintain a list of known domains from this service.
+
+        Returns:
+            List of domain strings.
+        """
+        # Known domains used by AdGuard Temp Mail service
+        # These are observed domains from the service
+        known_domains = [
+            "protectsmail.net",
+            "rapidletter.net",
+            "concu.net",
+        ]
+
+        # Try to fetch additional domains from the page if possible
+        try:
+            data = remoteData.fetch_http("https://tempmail.adguard.com/", timeout=5)
+            if data:
+                html_content = data.decode("utf-8")
+
+                # Look for domain patterns in the HTML
+                domain_matches = re.findall(r"@([a-z0-9.-]+\.[a-z]{2,})", html_content, re.I)
+                if domain_matches:
+                    known_domains.extend(domain_matches)
+
+                # Also check for domains in JavaScript variables or data attributes
+                js_domains = re.findall(
+                    r'domain["\']?\s*:\s*["\']([a-z0-9.-]+\.[a-z]{2,})["\']',
+                    html_content,
+                    re.I,
+                )
+                if js_domains:
+                    known_domains.extend(js_domains)
+        except Exception as e:
+            logging.debug("Could not fetch dynamic domains from AdGuard: %s", e)
+
+        return list(set(known_domains))
+
+    def _processTmailor(self) -> Optional[List[str]]:
+        """Fetch a list of disposable email domains from tmailor.com.
+
+        Note: Tmailor uses dynamic domain generation. This scraper attempts to
+        fetch domains from the service by sampling newly created addresses.
+
+        Returns:
+            List of domain strings.
+        """
+        headers = {
+            "accept": "*/*",
+            "accept-language": "en-US,en;q=0.5",
+            "content-type": "application/json",
+            "origin": "https://tmailor.com",
+            "referer": "https://tmailor.com/en/",
+            "user-agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0",
+        }
+
+        max_attempts = 15
+        domains: List[str] = []
+
+        for _ in range(max_attempts):
+            payload = {
+                "action": "newemail",
+                "curentToken": "",
+            }
+            try:
+                data = remoteData.fetch_http_post("https://tmailor.com/api", headers=headers, json_data=payload, timeout=8)
+            except Exception as exc:  # pragma: no cover - network quirks
+                logging.debug("Failed to talk to tmailor API: %s", exc)
+                continue
+
+            if not data:
+                continue
+
+            try:
+                resp = json.loads(data.decode("utf-8"))
+            except Exception as exc:
+                logging.debug("Invalid JSON from tmailor: %s", exc)
+                continue
+
+            email = resp.get("email")
+            if not email:
+                continue
+
+            _, _, domain = email.partition("@")
+            if domain and self.check_valid_domains(domain):
+                domains.append(domain)
+
+        domains = list(set(domains))
+        if not domains:
+            logging.warning("No domains found for tmailor.com")
+
+        return domains
 
     def read_files(self) -> None:
         """Read and compare to current (old) domains file."""
