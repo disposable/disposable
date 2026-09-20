@@ -61,13 +61,13 @@ class disposableHostGenerator:
         # {"type": "json", "src": "https://api.mailpoof.com/domains"},
         # dropmail.me - WebSocket URL changed to /api/graphql/<token>/websocket, needs new implementation
         # {"type": "ws", "src": "wss://dropmail.me/websocket"},
-        # tempmail.ninja - requires cloudflare bypass (TODO: implement workaround)
+        # tempmail.ninja - /en is 404, domain list is JS-assigned per session (no domains in markup even rendered)
         # {"type": "html", "src": "https://tempmail.ninja/en"},
         # tmp.al - luxusmail.org redirects here (HTTP 301), now an Android app
         # TODO: Investigate Android app - may need new extraction method
         # {"type": "html", "src": "https://tmp.al",
         #     "regex": re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
-        # tempmailo.com - cloudflare challenge, can't scrape
+        # tempmailo.com - interactive Turnstile challenge, flaresolverr cannot solve
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
         {"type": "custom", "src": "Tempamail"},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True},

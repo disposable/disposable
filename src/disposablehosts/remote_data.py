@@ -1,6 +1,7 @@
 """Remote data fetching utilities."""
 
 import logging
+import os
 import time
 from typing import Any, Dict, Optional
 
@@ -134,7 +135,49 @@ class remoteData:
             The content of the response as bytes.
         """
         res = remoteData.fetch_http_raw(url, headers, timeout, max_retry)
-        return (res and res.read()) or b""
+        body = (res and res.read()) or b""
+        if remoteData._is_cloudflare_challenge(res, body) and os.environ.get("FLARESOLVERR_URL"):
+            logging.info("Cloudflare challenge detected for %s, retrying via FlareSolverr", url)
+            return remoteData.fetch_flaresolverr(url)
+        return body
+
+    @staticmethod
+    def _is_cloudflare_challenge(res: Optional[httpx.Response], body: bytes) -> bool:
+        """Check whether a response is a Cloudflare challenge page."""
+        if res is None or getattr(res, "status_code", None) not in (403, 503):
+            return False
+        return b"challenges.cloudflare.com" in body or b"Just a moment" in body
+
+    @staticmethod
+    def fetch_flaresolverr(url: str, timeout: int = 60) -> bytes:
+        """Fetch a URL via a FlareSolverr instance to bypass JS challenges.
+
+        Requires the FLARESOLVERR_URL environment variable to point to a
+        running FlareSolverr instance (e.g. http://127.0.0.1:8191).
+
+        Args:
+            url: The URL to fetch.
+            timeout: Timeout in seconds for the challenge solving.
+
+        Returns:
+            The solved response body as bytes, or b"" on failure.
+        """
+        flaresolverr_url = os.environ.get("FLARESOLVERR_URL", "").rstrip("/")
+        if not flaresolverr_url:
+            return b""
+        try:
+            res = httpx.post(
+                f"{flaresolverr_url}/v1",
+                json={"cmd": "request.get", "url": url, "maxTimeout": timeout * 1000},
+                timeout=timeout + 15,
+            ).json()
+            solution = res.get("solution") or {}
+            if res.get("status") == "ok" and solution.get("status") == 200:
+                return str(solution.get("response") or "").encode("utf-8")
+            logging.warning("FlareSolverr failed for %s: %s", url, res.get("message"))
+        except Exception as e:
+            logging.warning("FlareSolverr request for %s failed: %s", url, e)
+        return b""
 
     @staticmethod
     def fetch_http_post(
