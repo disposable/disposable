@@ -304,16 +304,30 @@ class TestSourceHostnameArtifacts:
         gen = disposableHostGenerator()
         source = {"type": "html", "src": "https://emailfake.com", "scrape": True}
         data = b""
-        lines = ["emailfake.com", "fake.com", "ilfake.com", "ke.com", "e.com", "realdomain.com"]
+        lines = ["emailfake.com", "fake.com", "ilfake.com", "mailfake.com", "ke.com", "e.com", "realdomain.com"]
 
         result = gen._postprocess_data(source, data, lines)
 
         assert result is not False
         assert "emailfake.com" in gen.domains
         assert "realdomain.com" in gen.domains
-        for artifact in ("fake.com", "ilfake.com", "ke.com", "e.com"):
+        for artifact in ("fake.com", "ilfake.com", "mailfake.com", "ke.com", "e.com"):
             assert artifact not in gen.domains
             assert artifact not in gen.scrape
+
+    def test_html_source_keeps_apex_domain(self):
+        """Apex domain of a www.* source host is a legit self-reference, not an artifact."""
+        gen = disposableHostGenerator()
+        source = {"type": "html", "src": "https://www.fakemail.net/index/index", "regex": None}
+        data = b""
+        lines = ["fakemail.net", "www.fakemail.net", "mail.net", "realdomain.com"]
+
+        result = gen._postprocess_data(source, data, lines)
+
+        assert result is not False
+        assert "fakemail.net" in gen.domains
+        assert "realdomain.com" in gen.domains
+        assert "mail.net" not in gen.domains
 
     def test_html_source_keeps_unrelated_suffixes(self):
         """Domains that are not suffixes of the source hostname are kept."""

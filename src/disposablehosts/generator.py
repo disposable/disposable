@@ -312,7 +312,7 @@ class disposableHostGenerator:
             src_host = urlparse(str(source.get("src", ""))).hostname
             if src_host:
                 src_host = src_host.lower()
-                lines_filtered = [host for host in lines_filtered if host == src_host or not src_host.endswith(host)]
+                lines_filtered = [host for host in lines_filtered if host == src_host or not src_host.endswith(host) or src_host.endswith("." + host)]
 
         if source["type"] in ("whitelist", "whitelist_file", "sha1"):
             for host in lines_filtered:
