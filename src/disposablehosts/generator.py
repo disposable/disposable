@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 import httpx
 import tldextract
+from websocket import create_connection
 
 from .constants import (
     DISPOSABLE_GREYLIST_URL,
@@ -61,8 +62,8 @@ class disposableHostGenerator:
         # {"type": "json", "src": "https://api.mailpoof.com/domains"},
         # dropmail.me - WebSocket URL changed to /api/graphql/<token>/websocket, needs new implementation
         # {"type": "ws", "src": "wss://dropmail.me/websocket"},
-        # tempmail.ninja - /en is 404, domain list is JS-assigned per session (no domains in markup even rendered)
-        # {"type": "html", "src": "https://tempmail.ninja/en"},
+        # tempmail.ninja - Nuxt SPA backed by a Socket.IO service (no domains in markup)
+        {"type": "custom", "src": "TempmailNinja", "scrape": True},
         # tmp.al - luxusmail.org redirects here (HTTP 301), now an Android app
         # TODO: Investigate Android app - may need new extraction method
         # {"type": "html", "src": "https://tmp.al",
@@ -602,6 +603,65 @@ class disposableHostGenerator:
             logging.warning("No domains found for tmailor.com")
 
         return domains
+
+    def _processTempmailNinja(self) -> Optional[List[str]]:
+        """Fetch disposable email domains from tempmail.ninja via its Socket.IO backend.
+
+        The webapp is a Nuxt SPA that talks to a Socket.IO service at
+        tm-app.solucioneswc.com:2083. The `get_domains` event (unauthenticated)
+        returns the selectable domain pool for a given `domainType`; we query a
+        small range and merge all pools. `generate_temp_mail` requires a guest
+        session token, so the auto-assigned pool is not reachable this way.
+
+        Returns:
+            List of domain strings, or None if the backend is unreachable.
+        """
+        ws_url = "wss://tm-app.solucioneswc.com:2083/socket.io/?locale=en&EIO=4&transport=websocket"
+        domain_types = range(6)
+        domains: Set[str] = set()
+        try:
+            ws = create_connection(ws_url, origin="https://tempmail.ninja", timeout=15)
+            try:
+                ws.recv()  # Engine.IO open packet: 0{...}
+                ws.send("40")  # Socket.IO connect
+                ws.recv()  # connect ack: 40{...} (or 44 error)
+                for req_id, domain_type in enumerate(domain_types):
+                    ws.send(f'42{req_id}["get_domains",{{"domainType":{domain_type}}}]')
+                ws.settimeout(15)
+                acks = 0
+                deadline = time.time() + 20
+                while acks < len(domain_types) and time.time() < deadline:
+                    try:
+                        msg = ws.recv()
+                    except Exception:
+                        break
+                    if msg == "2":  # Engine.IO ping -> pong
+                        ws.send("3")
+                        continue
+                    m = re.match(r"43\d+(\[.*\])$", msg, re.S)
+                    if not m:
+                        continue  # server events like connection_warning
+                    acks += 1
+                    try:
+                        payload = json.loads(m.group(1))
+                    except ValueError:
+                        continue
+                    if not payload or not isinstance(payload[0], dict):
+                        continue
+                    for entry in payload[0].get("domains") or []:
+                        name = entry.get("name")
+                        if name and entry.get("status") == 1:
+                            domains.add(name.lower())
+            finally:
+                ws.close()
+        except Exception as e:
+            logging.warning("Failed to fetch tempmail.ninja domains: %s", e)
+            return None
+
+        if not domains:
+            logging.warning("No domains found for tempmail.ninja")
+
+        return sorted(domains)
 
     def read_files(self) -> None:
         """Read and compare to current (old) domains file."""
