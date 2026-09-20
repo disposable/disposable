@@ -625,6 +625,11 @@ class disposableHostGenerator:
         try:
             ws = create_connection(ws_url, origin="https://tempmail.ninja", timeout=15)
             try:
+
+                def recv_text() -> str:
+                    m = ws.recv()
+                    return m.decode("utf-8", "replace") if isinstance(m, bytes) else m
+
                 ws.recv()  # Engine.IO open packet: 0{...}
                 ws.send("40")  # Socket.IO connect
                 ws.recv()  # connect ack: 40{...} (or 44 error)
@@ -635,7 +640,7 @@ class disposableHostGenerator:
                 try:
                     msg = ""
                     while not msg.startswith("43"):
-                        msg = ws.recv()
+                        msg = recv_text()
                 except Exception as e:
                     logging.debug("tempmail.ninja guest session bootstrap failed: %s", e)
 
@@ -649,7 +654,7 @@ class disposableHostGenerator:
                 deadline = time.time() + 20
                 while acks < expected and time.time() < deadline:
                     try:
-                        msg = ws.recv()
+                        msg = recv_text()
                     except Exception:
                         break
                     if msg == "2":  # Engine.IO ping -> pong
