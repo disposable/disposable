@@ -149,7 +149,7 @@ class remoteData:
         return b"cdn-cgi/challenge-platform" in body or b"Just a moment" in body
 
     @staticmethod
-    def fetch_flaresolverr(url: str, timeout: int = 60) -> bytes:
+    def fetch_flaresolverr(url: str, timeout: int = 60, post_data: Optional[str] = None) -> bytes:
         """Fetch a URL via a FlareSolverr instance to bypass JS challenges.
 
         Requires the FLARESOLVERR_URL environment variable to point to a
@@ -158,6 +158,7 @@ class remoteData:
         Args:
             url: The URL to fetch.
             timeout: Timeout in seconds for the challenge solving.
+            post_data: Optional form-encoded body; uses request.post when set.
 
         Returns:
             The solved response body as bytes, or b"" on failure.
@@ -165,12 +166,11 @@ class remoteData:
         flaresolverr_url = os.environ.get("FLARESOLVERR_URL", "").rstrip("/")
         if not flaresolverr_url:
             return b""
+        payload: Dict[str, Any] = {"cmd": "request.post" if post_data is not None else "request.get", "url": url, "maxTimeout": timeout * 1000}
+        if post_data is not None:
+            payload["postData"] = post_data
         try:
-            res = httpx.post(
-                f"{flaresolverr_url}/v1",
-                json={"cmd": "request.get", "url": url, "maxTimeout": timeout * 1000},
-                timeout=timeout + 15,
-            ).json()
+            res = httpx.post(f"{flaresolverr_url}/v1", json=payload, timeout=timeout + 15).json()
             solution = res.get("solution") or {}
             if res.get("status") == "ok" and solution.get("status") == 200:
                 return str(solution.get("response") or "").encode("utf-8")

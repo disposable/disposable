@@ -216,3 +216,66 @@ class TestFetchHttpRaw:
         call_kwargs = mock_client_class.call_args[1]
         assert call_kwargs.get("http2") is True
         assert call_kwargs.get("verify") is False
+
+
+class TestFetchFlareSolverr:
+    """Tests for the FlareSolverr fallback helper."""
+
+    @patch("disposablehosts.remote_data.httpx.post")
+    def test_fetch_flaresolverr_get(self, mock_post, monkeypatch):
+        """GET request returns the solved response body."""
+        monkeypatch.setenv("FLARESOLVERR_URL", "http://127.0.0.1:8191")
+        mock_res = MagicMock()
+        mock_res.json.return_value = {"status": "ok", "solution": {"status": 200, "response": "<html>ok</html>"}}
+        mock_post.return_value = mock_res
+
+        result = remoteData.fetch_flaresolverr("https://example.com")
+        assert result == b"<html>ok</html>"
+        payload = mock_post.call_args[1]["json"]
+        assert payload["cmd"] == "request.get"
+        assert "postData" not in payload
+
+    @patch("disposablehosts.remote_data.httpx.post")
+    def test_fetch_flaresolverr_post(self, mock_post, monkeypatch):
+        """POST request passes postData and uses request.post."""
+        monkeypatch.setenv("FLARESOLVERR_URL", "http://127.0.0.1:8191")
+        mock_res = MagicMock()
+        mock_res.json.return_value = {
+            "status": "ok",
+            "solution": {"status": 200, "response": '<pre>{"mailbox":"logalew991@airychen.com"}</pre>'},
+        }
+        mock_post.return_value = mock_res
+
+        result = remoteData.fetch_flaresolverr("https://web2.temp-mail.org/mailbox", post_data="{}")
+        assert b"airychen.com" in result
+        payload = mock_post.call_args[1]["json"]
+        assert payload["cmd"] == "request.post"
+        assert payload["postData"] == "{}"
+
+    @patch("disposablehosts.remote_data.httpx.post")
+    def test_fetch_flaresolverr_no_url_env(self, mock_post, monkeypatch):
+        """Returns empty bytes when FLARESOLVERR_URL is unset."""
+        monkeypatch.delenv("FLARESOLVERR_URL", raising=False)
+        assert remoteData.fetch_flaresolverr("https://example.com") == b""
+        mock_post.assert_not_called()
+
+
+class TestTempMailOrgProcessor:
+    """Tests for the temp-mail.org FlareSolverr scraper."""
+
+    def test_parses_mailbox_domain(self):
+        from disposablehosts.generator import disposableHostGenerator
+
+        gen = disposableHostGenerator(options={"whitelist": "whitelist.txt"}, out_file="/tmp/domains-test")
+        with patch("disposablehosts.generator.remoteData.fetch_flaresolverr") as mock_fs:
+            mock_fs.return_value = b'<html><body><pre>{"token":"x","mailbox":"logalew991@airychen.com"}</pre></body></html>'
+            assert gen._processTempMailOrg() == ["airychen.com"]
+            mock_fs.assert_called_once_with("https://web2.temp-mail.org/mailbox", post_data="{}")
+
+    def test_returns_none_without_mailbox(self):
+        from disposablehosts.generator import disposableHostGenerator
+
+        gen = disposableHostGenerator(options={"whitelist": "whitelist.txt"}, out_file="/tmp/domains-test")
+        with patch("disposablehosts.generator.remoteData.fetch_flaresolverr") as mock_fs:
+            mock_fs.return_value = b"{}"
+            assert gen._processTempMailOrg() is None

@@ -195,6 +195,9 @@ class disposableHostGenerator:
         if os.environ.get("DUSTMAIL_API_KEY"):
             self.sources.append({"type": "custom", "src": "Dustmail"})
 
+        if os.environ.get("FLARESOLVERR_URL"):
+            self.sources.append({"type": "custom", "src": "TempMailOrg", "scrape": True})
+
         # Load remote URL if no custom list is defined
         if self.options.get("whitelist") is None:
             self.sources.insert(0, {"type": "whitelist", "src": DISPOSABLE_WHITELIST_URL})
@@ -689,6 +692,27 @@ class disposableHostGenerator:
             logging.warning("No domains found for tempmail.ninja")
 
         return sorted(domains)
+
+    def _processTempMailOrg(self) -> Optional[List[str]]:
+        """Fetch the currently assigned mailbox domain from temp-mail.org via FlareSolverr.
+
+        temp-mail.org assigns one rotating domain per session and its public
+        domain API is stale (issue #260). POST https://web2.temp-mail.org/mailbox
+        through FlareSolverr creates a fresh mailbox and returns its domain;
+        one sample per run accumulates the rotating pool.
+
+        Returns:
+            List with the current domain, or None if unreachable.
+        """
+        try:
+            data = remoteData.fetch_flaresolverr("https://web2.temp-mail.org/mailbox", post_data="{}")
+            m = re.search(rb'"mailbox"\s*:\s*"[^"@]*@([a-z0-9.-]+\.[a-z]{2,})"', data or b"")
+            if m:
+                return [m.group(1).decode().lower()]
+            logging.warning("No mailbox domain found for temp-mail.org")
+        except Exception as e:
+            logging.warning("Failed to fetch temp-mail.org domain: %s", e)
+        return None
 
     def read_files(self) -> None:
         """Read and compare to current (old) domains file."""
