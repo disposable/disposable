@@ -74,6 +74,12 @@ Some sources require an API key and are only enabled when the corresponding envi
 
 If `FLARESOLVERR_URL` points to a running [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) instance (e.g. `http://127.0.0.1:8191`), sources that answer with a Cloudflare challenge page are automatically retried through it.
 
+### Retention and delta guard
+
+Domains seen by sources we crawl ourselves (`custom`, `html`, `ws` types) are remembered in `source_cache.json` next to the output file and kept contributing to the list for `--retention-days` (default: 30, `0` disables). This protects against transient fetch failures and rotating-domain providers. Upstream compilation sources (`list`, `json`, `sha1`, `file`) are not retained; a source can override the default with a `"retain": true/false` flag.
+
+Additionally, a run aborts without writing output if more than `--max-delta-ratio` (default: 0.2, `0` disables) of the previous list would be removed, as mass removal usually indicates a source outage. Runs limited via `--src` or `--file` are exempt.
+
 ## External Sources:
 |Source|Status|
 |------|--:|

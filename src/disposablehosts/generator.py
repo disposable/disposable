@@ -28,8 +28,16 @@ from .sources.websocket import fetch_websocket_source
 from .utils.dns import fetch_MX
 
 
+class DeltaCheckError(RuntimeError):
+    """Raised when a run would remove too many domains (likely source outage)."""
+
+
 class disposableHostGenerator:
     """Generator for collecting and validating disposable email domains."""
+
+    # Source types we crawl ourselves - eligible for retention of previously
+    # seen domains. Upstream compilations (list/json/sha1/file) are excluded.
+    RETAIN_SOURCE_TYPES = ("custom", "html", "ws")
 
     sources: List[Dict[str, Any]] = [  # noqa: RUF012 - Mutable default is intentional, copied in __init__
         {"type": "list", "external": True, "src": "https://gist.githubusercontent.com/adamloving/4401361/raw/"},
@@ -185,6 +193,13 @@ class disposableHostGenerator:
         self.skip: Set[str] = set()
         self.grey: Set[str] = set()
         self.source_map: Dict[str, Union[Set[str], List[str]]] = {}
+        self.source_cache: Dict[str, Dict[str, float]] = {}
+        self._cache_written = False
+
+        retention_days = self.options.get("retention_days")
+        self.retention_days = 30 if retention_days is None else int(retention_days)
+        max_delta_ratio = self.options.get("max_delta_ratio")
+        self.max_delta_ratio = 0.2 if max_delta_ratio is None else float(max_delta_ratio)
 
         # Copy class sources to instance to avoid mutating ClassVar
         self.sources = list(self.sources)
@@ -344,6 +359,12 @@ class disposableHostGenerator:
             return False
 
         self.source_map[source["src"]] = self.scrape if source.get("scrape") else lines_filtered
+
+        if self._source_retains(source):
+            cache_entry = self.source_cache.setdefault(str(source["src"]), {})
+            now = time.time()
+            for host in lines_filtered:
+                cache_entry[host] = now
 
         added_domains = 0
         added_scrape_domains: List[str] = []
@@ -753,6 +774,67 @@ class disposableHostGenerator:
             # Expected on first run - optional file may not exist yet
             pass
 
+    def _source_retains(self, source: Dict[str, Any]) -> bool:
+        """Whether a source's seen domains are retained across runs.
+
+        Enabled by default for sources we crawl ourselves (custom/html/ws);
+        upstream compilations (list/json/sha1/file) are excluded. Per-source
+        override via the ``retain`` flag.
+        """
+        if "retain" in source:
+            return bool(source["retain"])
+        return source.get("type") in self.RETAIN_SOURCE_TYPES
+
+    def _load_source_cache(self) -> None:
+        """Load the per-source retention cache next to the output file."""
+        path = os.path.join(os.path.dirname(self.out_file) or ".", "source_cache.json")
+        try:
+            with open(path) as f:
+                raw = json.load(f)
+            if isinstance(raw, dict):
+                self.source_cache = {str(src): {str(d): float(ts) for d, ts in entries.items()} for src, entries in raw.items() if isinstance(entries, dict)}
+        except (FileNotFoundError, ValueError, OSError):
+            pass
+
+    def _write_source_cache(self) -> None:
+        """Persist the per-source retention cache, pruning expired entries."""
+        if self._cache_written:
+            return
+        self._cache_written = True
+        path = os.path.join(os.path.dirname(self.out_file) or ".", "source_cache.json")
+        cutoff = time.time() - self.retention_days * 86400
+        cache = {src: {d: ts for d, ts in entries.items() if ts >= cutoff} for src, entries in self.source_cache.items()}
+        cache = {src: entries for src, entries in cache.items() if entries}
+        with open(path, "w") as f:
+            json.dump(cache, f, indent=2, sort_keys=True)
+
+    def _apply_retention(self) -> None:
+        """Merge non-expired cached domains of crawled sources into the result.
+
+        Rotating-pool samplers only return the currently active domain(s), and
+        transient failures would otherwise drop a source's contribution. Cached
+        domains are merged before whitelisting so the whitelist still applies.
+        """
+        if not self.retention_days:
+            return
+        if not self.source_cache:
+            self._load_source_cache()
+
+        cutoff = time.time() - self.retention_days * 86400
+        retained = 0
+        for entries in self.source_cache.values():
+            for host, seen in entries.items():
+                if seen >= cutoff and host not in self.domains and self.check_valid_domains(host):
+                    self.domains.add(host)
+                    self.legacy_domains.add(host)
+                    retained += 1
+                    try:
+                        self.sha1.add(hashlib.sha1(host.encode("idna")).hexdigest())  # nosec B324 - SHA1 used for domain hashing, not security
+                    except Exception:  # nosec B110 - Intentional fallback for encoding errors
+                        pass
+        if retained:
+            logging.info("Retained %s domain(s) from source cache", retained)
+
     def check_valid_domains(self, host: str) -> bool:
         """Check if the given host is a valid domain name.
 
@@ -891,19 +973,48 @@ class disposableHostGenerator:
             logging.info("Fetched: %s", self.domains)
         return True
 
+    def _enforce_max_delta(self) -> None:
+        """Abort the run when too many domains would be removed.
+
+        A mass removal usually indicates a source outage or broken fetch rather
+        than legitimate upstream churn. Raises before any output is written so
+        callers (update.sh) keep the previous list.
+        """
+        if not self.max_delta_ratio:
+            return
+        if self.options.get("src_filter") or self.options.get("file"):
+            return  # partial runs are not representative
+        if not self.old_domains:
+            self.read_files()
+        if not self.old_domains:
+            return  # first run
+
+        removed = self.old_domains - self.domains
+        min_abs_change = 50
+        if len(removed) > min_abs_change and len(removed) / len(self.old_domains) > self.max_delta_ratio:
+            raise DeltaCheckError(
+                f"Delta check failed: {len(removed)} of {len(self.old_domains)} domains would be removed "
+                f"(> {self.max_delta_ratio:.0%}). Refusing to write output."
+            )
+
     def generate(self) -> bool:
         """Fetch all data and generate lists.
 
         Returns:
             True if data was fetched and there are changes, False otherwise.
         """
+        self._load_source_cache()
         self._fetch_sources()
+        self._apply_retention()
         self._apply_whitelist()
         self._verify_mx_records()
-        return self._log_generation_results()
+        changed = self._log_generation_results()
+        self._enforce_max_delta()
+        return changed
 
     def write_to_file(self) -> None:
         """Write new list to file(s)."""
+        self._write_source_cache()
         domains = sorted(self.domains)
         with open(f"{self.out_file}.txt", "w") as ff:
             ff.write("\n".join(domains))
