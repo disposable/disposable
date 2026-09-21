@@ -3,6 +3,7 @@
 import logging
 import os
 import time
+import urllib.parse
 from typing import Any, Dict, Optional
 
 import httpx
@@ -149,7 +150,7 @@ class remoteData:
         return b"cdn-cgi/challenge-platform" in body or b"Just a moment" in body
 
     @staticmethod
-    def fetch_flaresolverr(url: str, timeout: int = 60, post_data: Optional[str] = None) -> bytes:
+    def fetch_flaresolverr(url: str, timeout: int = 60, post_data: Optional[str] = None, proxy: Optional[str] = None) -> bytes:
         """Fetch a URL via a FlareSolverr instance to bypass JS challenges.
 
         Requires the FLARESOLVERR_URL environment variable to point to a
@@ -159,6 +160,9 @@ class remoteData:
             url: The URL to fetch.
             timeout: Timeout in seconds for the challenge solving.
             post_data: Optional form-encoded body; uses request.post when set.
+            proxy: Optional proxy URL the solver's browser egresses through
+                (e.g. http://user:pass@host:port) - gives the request a
+                different source IP for per-IP rate limits / rotation pools.
 
         Returns:
             The solved response body as bytes, or b"" on failure.
@@ -169,6 +173,15 @@ class remoteData:
         payload: Dict[str, Any] = {"cmd": "request.post" if post_data is not None else "request.get", "url": url, "maxTimeout": timeout * 1000}
         if post_data is not None:
             payload["postData"] = post_data
+        if proxy:
+            # FlareSolverr expects credentials in separate fields; userinfo in
+            # the URL is ignored by its proxy handling.
+            parsed = urllib.parse.urlparse(proxy)
+            proxy_payload: Dict[str, Any] = {"url": f"{parsed.scheme}://{parsed.hostname}:{parsed.port}"}
+            if parsed.username:
+                proxy_payload["username"] = urllib.parse.unquote(parsed.username)
+                proxy_payload["password"] = urllib.parse.unquote(parsed.password or "")
+            payload["proxy"] = proxy_payload
         try:
             res = httpx.post(f"{flaresolverr_url}/v1", json=payload, timeout=timeout + 15).json()
             solution = res.get("solution") or {}

@@ -777,30 +777,49 @@ class disposableHostGenerator:
         temp-mail.org assigns one rotating domain per session and its public
         domain API is stale (issue #260). POST https://web2.temp-mail.org/mailbox
         through FlareSolverr creates a fresh mailbox and returns its domain.
-        The rotation window is short, so a few spaced attempts can catch more
-        than one pool domain; the backend rate-limits, so we stop on failure.
+
+        When FLARESOLVERR_PROXIES is set (comma-separated proxy URLs), one
+        request per proxy is sent - each egresses from a different IP, so the
+        per-IP rate limit does not collide and each request may land in a
+        different rotation window. Without proxies, a few spaced attempts can
+        still catch a mid-run rotation; the backend rate-limits per IP, so we
+        stop on failure.
 
         Returns:
             List of domain strings, or None if unreachable.
         """
+        proxies = [p.strip() for p in os.environ.get("FLARESOLVERR_PROXIES", "").split(",") if p.strip()]
         domains: Set[str] = set()
-        for _ in range(5):
-            try:
-                data = remoteData.fetch_flaresolverr("https://web2.temp-mail.org/mailbox", timeout=45, post_data="{}")
-            except Exception as e:
-                logging.debug("temp-mail.org mailbox request failed: %s", e)
-                break
-            m = re.search(rb'"mailbox"\s*:\s*"[^"@]*@([a-z0-9.-]+\.[a-z]{2,})"', data or b"")
-            if not m:
-                break  # rate limited or unexpected response
-            domains.add(m.group(1).decode().lower())
-            time.sleep(20)
+        if proxies:
+            for proxy in proxies:
+                domain = self._tempmailorg_sample(proxy)
+                if domain:
+                    domains.add(domain)
+        else:
+            for _ in range(5):
+                domain = self._tempmailorg_sample()
+                if not domain:
+                    break  # rate limited or unreachable
+                domains.add(domain)
+                time.sleep(20)
 
         if not domains:
             logging.warning("No domains found for temp-mail.org")
             return None
 
         return sorted(domains)
+
+    def _tempmailorg_sample(self, proxy: Optional[str] = None) -> Optional[str]:
+        """Create one mailbox on temp-mail.org and return its domain."""
+        try:
+            data = remoteData.fetch_flaresolverr("https://web2.temp-mail.org/mailbox", timeout=45, post_data="{}", proxy=proxy)
+        except Exception as e:
+            logging.debug("temp-mail.org mailbox request failed: %s", e)
+            return None
+        m = re.search(rb'"mailbox"\s*:\s*"[^"@]*@([a-z0-9.-]+\.[a-z]{2,})"', data or b"")
+        if not m:
+            return None
+        return m.group(1).decode().lower()
 
     def read_files(self) -> None:
         """Read and compare to current (old) domains file."""
