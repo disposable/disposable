@@ -259,6 +259,30 @@ class TestFetchFlareSolverr:
         assert remoteData.fetch_flaresolverr("https://example.com") == b""
         mock_post.assert_not_called()
 
+    @patch("disposablehosts.remote_data.httpx.post")
+    def test_fetch_flaresolverr_proxy_credentials_split(self, mock_post, monkeypatch):
+        """Userinfo in the proxy URL is split into username/password fields."""
+        monkeypatch.setenv("FLARESOLVERR_URL", "http://127.0.0.1:8191")
+        mock_res = MagicMock()
+        mock_res.json.return_value = {"status": "ok", "solution": {"status": 200, "response": "ok"}}
+        mock_post.return_value = mock_res
+
+        remoteData.fetch_flaresolverr("https://example.com", proxy="http://user%40x:p%23ss@proxy.host:8080")
+        proxy = mock_post.call_args[1]["json"]["proxy"]
+        assert proxy == {"url": "http://proxy.host:8080", "username": "user@x", "password": "p#ss"}
+
+    @patch("disposablehosts.remote_data.httpx.post")
+    def test_fetch_flaresolverr_proxy_no_auth(self, mock_post, monkeypatch):
+        """Proxy without credentials passes only the url field."""
+        monkeypatch.setenv("FLARESOLVERR_URL", "http://127.0.0.1:8191")
+        mock_res = MagicMock()
+        mock_res.json.return_value = {"status": "ok", "solution": {"status": 200, "response": "ok"}}
+        mock_post.return_value = mock_res
+
+        remoteData.fetch_flaresolverr("https://example.com", proxy="socks5://proxy.host:1080")
+        proxy = mock_post.call_args[1]["json"]["proxy"]
+        assert proxy == {"url": "socks5://proxy.host:1080"}
+
 
 class TestTempMailOrgProcessor:
     """Tests for the temp-mail.org FlareSolverr scraper."""
@@ -294,3 +318,25 @@ class TestTempMailOrgProcessor:
         with patch("disposablehosts.generator.remoteData.fetch_flaresolverr") as mock_fs:
             mock_fs.return_value = b"{}"
             assert gen._processTempMailOrg() is None
+
+    def test_proxy_rotation(self, monkeypatch):
+        from disposablehosts.generator import disposableHostGenerator
+
+        monkeypatch.setenv("FLARESOLVERR_PROXIES", "http://p1:1, http://p2:2")
+        gen = disposableHostGenerator(options={"whitelist": "whitelist.txt"}, out_file="/tmp/domains-test")
+        bodies = [b'{"mailbox":"a@airychen.com"}', b'{"mailbox":"b@findize.com"}']
+        with patch("disposablehosts.generator.remoteData.fetch_flaresolverr") as mock_fs:
+            mock_fs.side_effect = bodies
+            assert gen._processTempMailOrg() == ["airychen.com", "findize.com"]
+            assert [c.kwargs["proxy"] for c in mock_fs.call_args_list] == ["http://p1:1", "http://p2:2"]
+
+    def test_proxy_failure_continues(self, monkeypatch):
+        from disposablehosts.generator import disposableHostGenerator
+
+        monkeypatch.setenv("FLARESOLVERR_PROXIES", "http://dead:1,http://p2:2")
+        gen = disposableHostGenerator(options={"whitelist": "whitelist.txt"}, out_file="/tmp/domains-test")
+        bodies = [b"error", b'{"mailbox":"b@findize.com"}']
+        with patch("disposablehosts.generator.remoteData.fetch_flaresolverr") as mock_fs:
+            mock_fs.side_effect = bodies
+            assert gen._processTempMailOrg() == ["findize.com"]
+            assert mock_fs.call_count == 2
