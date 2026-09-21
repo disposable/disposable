@@ -267,10 +267,25 @@ class TestTempMailOrgProcessor:
         from disposablehosts.generator import disposableHostGenerator
 
         gen = disposableHostGenerator(options={"whitelist": "whitelist.txt"}, out_file="/tmp/domains-test")
-        with patch("disposablehosts.generator.remoteData.fetch_flaresolverr") as mock_fs:
+        with patch("disposablehosts.generator.remoteData.fetch_flaresolverr") as mock_fs, patch("disposablehosts.generator.time.sleep"):
             mock_fs.return_value = b'<html><body><pre>{"token":"x","mailbox":"logalew991@airychen.com"}</pre></body></html>'
             assert gen._processTempMailOrg() == ["airychen.com"]
-            mock_fs.assert_called_once_with("https://web2.temp-mail.org/mailbox", post_data="{}")
+            assert mock_fs.call_count == 5
+
+    def test_collects_multiple_domains(self):
+        from disposablehosts.generator import disposableHostGenerator
+
+        gen = disposableHostGenerator(options={"whitelist": "whitelist.txt"}, out_file="/tmp/domains-test")
+        bodies = [
+            b'{"mailbox":"a@airychen.com"}',
+            b'{"mailbox":"b@airychen.com"}',
+            b'{"mailbox":"c@findize.com"}',
+            b"",
+        ]
+        with patch("disposablehosts.generator.remoteData.fetch_flaresolverr") as mock_fs, patch("disposablehosts.generator.time.sleep"):
+            mock_fs.side_effect = bodies
+            assert gen._processTempMailOrg() == ["airychen.com", "findize.com"]
+            assert mock_fs.call_count == 4
 
     def test_returns_none_without_mailbox(self):
         from disposablehosts.generator import disposableHostGenerator

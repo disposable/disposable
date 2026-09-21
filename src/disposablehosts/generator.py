@@ -698,21 +698,31 @@ class disposableHostGenerator:
 
         temp-mail.org assigns one rotating domain per session and its public
         domain API is stale (issue #260). POST https://web2.temp-mail.org/mailbox
-        through FlareSolverr creates a fresh mailbox and returns its domain;
-        one sample per run accumulates the rotating pool.
+        through FlareSolverr creates a fresh mailbox and returns its domain.
+        The rotation window is short, so a few spaced attempts can catch more
+        than one pool domain; the backend rate-limits, so we stop on failure.
 
         Returns:
-            List with the current domain, or None if unreachable.
+            List of domain strings, or None if unreachable.
         """
-        try:
-            data = remoteData.fetch_flaresolverr("https://web2.temp-mail.org/mailbox", post_data="{}")
+        domains: Set[str] = set()
+        for _ in range(5):
+            try:
+                data = remoteData.fetch_flaresolverr("https://web2.temp-mail.org/mailbox", timeout=45, post_data="{}")
+            except Exception as e:
+                logging.debug("temp-mail.org mailbox request failed: %s", e)
+                break
             m = re.search(rb'"mailbox"\s*:\s*"[^"@]*@([a-z0-9.-]+\.[a-z]{2,})"', data or b"")
-            if m:
-                return [m.group(1).decode().lower()]
-            logging.warning("No mailbox domain found for temp-mail.org")
-        except Exception as e:
-            logging.warning("Failed to fetch temp-mail.org domain: %s", e)
-        return None
+            if not m:
+                break  # rate limited or unexpected response
+            domains.add(m.group(1).decode().lower())
+            time.sleep(20)
+
+        if not domains:
+            logging.warning("No domains found for temp-mail.org")
+            return None
+
+        return sorted(domains)
 
     def read_files(self) -> None:
         """Read and compare to current (old) domains file."""
