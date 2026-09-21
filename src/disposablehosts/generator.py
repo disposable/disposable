@@ -794,6 +794,7 @@ class disposableHostGenerator:
             if isinstance(raw, dict):
                 self.source_cache = {str(src): {str(d): float(ts) for d, ts in entries.items()} for src, entries in raw.items() if isinstance(entries, dict)}
         except (FileNotFoundError, ValueError, OSError):
+            # Expected on first run or after cache cleanup - start empty
             pass
 
     def _write_source_cache(self) -> None:

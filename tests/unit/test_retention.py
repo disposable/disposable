@@ -57,19 +57,19 @@ class TestApplyRetention:
         gen = _gen(tmp_path)
         gen.source_cache = {"OldSrc": {"cached-domain.com": time.time()}}
         gen._apply_retention()
-        assert "cached-domain.com" in gen.domains
+        assert gen.domains == {"cached-domain.com"}
 
     def test_expired_entry_dropped(self, tmp_path):
         gen = _gen(tmp_path, retention_days=1)
         gen.source_cache = {"OldSrc": {"stale-domain.com": time.time() - 3 * 86400}}
         gen._apply_retention()
-        assert "stale-domain.com" not in gen.domains
+        assert not gen.domains
 
     def test_disabled_when_zero_days(self, tmp_path):
         gen = _gen(tmp_path, retention_days=0)
         gen.source_cache = {"OldSrc": {"cached-domain.com": time.time()}}
         gen._apply_retention()
-        assert "cached-domain.com" not in gen.domains
+        assert not gen.domains
 
     def test_invalid_cached_domain_skipped(self, tmp_path):
         gen = _gen(tmp_path)
@@ -83,7 +83,7 @@ class TestApplyRetention:
         gen._apply_retention()
         gen.skip = {"cached-domain.com"}
         gen._apply_whitelist()
-        assert "cached-domain.com" not in gen.domains
+        assert not gen.domains
 
 
 class TestSourceCacheFile:
@@ -94,11 +94,11 @@ class TestSourceCacheFile:
         gen.source_cache = {"SrcA": {"alpha-test.com": time.time()}}
         gen._write_source_cache()
         raw = json.loads((tmp_path / "source_cache.json").read_text())
-        assert "alpha-test.com" in raw["SrcA"]
+        assert set(raw["SrcA"]) == {"alpha-test.com"}
 
         gen2 = _gen(tmp_path)
         gen2._load_source_cache()
-        assert "alpha-test.com" in gen2.source_cache["SrcA"]
+        assert set(gen2.source_cache["SrcA"]) == {"alpha-test.com"}
 
     def test_write_prunes_expired(self, tmp_path):
         gen = _gen(tmp_path, retention_days=1)
