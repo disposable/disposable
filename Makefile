@@ -29,7 +29,7 @@ complexity:
 	radon cc src -a -nc
 
 xenon:
-	-xenon -b C -m C -a C src || true
+	xenon -b C -m C -a C src
 
 bandit:
 	bandit -c pyproject.toml -r src
