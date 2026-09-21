@@ -357,27 +357,14 @@ class disposableHostGenerator:
             True if source is whitelist/greylist, False if no results,
             or tuple of (added_count, found_count).
         """
-        lines_filtered = [line.lower().strip(" .,;@") for line in lines]
-        lines_filtered = list(filter(self.check_valid_domains, lines_filtered))
-
-        if not lines_filtered:
-            fallback_lines = [match.lower().strip(" .,;@") for match in DOMAIN_SEARCH_RE.findall(str(data))]
-            lines_filtered = list(filter(self.check_valid_domains, fallback_lines))
-
-        if source["type"] == "html":
-            src_host = urlparse(str(source.get("src", ""))).hostname
-            if src_host:
-                src_host = src_host.lower()
-                lines_filtered = [host for host in lines_filtered if host == src_host or not src_host.endswith(host) or src_host.endswith("." + host)]
+        lines_filtered = self._filter_source_hosts(source, data, lines)
 
         if source["type"] in ("whitelist", "whitelist_file", "sha1"):
-            for host in lines_filtered:
-                self.skip.add(host)
+            self.skip.update(lines_filtered)
             return True
 
         if source["type"] in ("greylist", "greylist_file"):
-            for host in lines_filtered:
-                self.grey.add(host)
+            self.grey.update(lines_filtered)
             return True
 
         if not lines_filtered:
@@ -392,6 +379,43 @@ class disposableHostGenerator:
             for host in lines_filtered:
                 cache_entry[host] = now
 
+        added_domains, added_scrape_domains = self._merge_domains(source, lines_filtered)
+
+        logging.debug("Example domain: %s", lines_filtered[0])
+
+        if source.get("scrape"):
+            logging.debug("Added %s scraped domains: %s", len(added_scrape_domains), added_scrape_domains)
+            return len(added_scrape_domains), len(lines_filtered)
+
+        return added_domains, len(lines_filtered)
+
+    def _filter_source_hosts(self, source: Dict[str, Any], data: bytes, lines: List[str]) -> List[str]:
+        """Normalize source lines to valid domains.
+
+        Falls back to a domain regex over the raw data when no valid lines are
+        found, and strips the source's own hostname artifacts for html sources.
+        """
+        lines_filtered = [line.lower().strip(" .,;@") for line in lines]
+        lines_filtered = list(filter(self.check_valid_domains, lines_filtered))
+
+        if not lines_filtered:
+            fallback_lines = [match.lower().strip(" .,;@") for match in DOMAIN_SEARCH_RE.findall(str(data))]
+            lines_filtered = list(filter(self.check_valid_domains, fallback_lines))
+
+        if source["type"] == "html":
+            src_host = urlparse(str(source.get("src", ""))).hostname
+            if src_host:
+                src_host = src_host.lower()
+                lines_filtered = [host for host in lines_filtered if host == src_host or not src_host.endswith(host) or src_host.endswith("." + host)]
+
+        return lines_filtered
+
+    def _merge_domains(self, source: Dict[str, Any], lines_filtered: List[str]) -> Tuple[int, List[str]]:
+        """Merge validated hosts into domains/legacy/sha1/scrape sets.
+
+        Returns:
+            Tuple of (number of newly added domains, list of new scrape domains).
+        """
         added_domains = 0
         added_scrape_domains: List[str] = []
         for host in lines_filtered:
@@ -409,15 +433,7 @@ class disposableHostGenerator:
             if source.get("scrape") and host not in self.scrape:
                 self.scrape.add(host)
                 added_scrape_domains.append(host)
-
-        if lines_filtered:
-            logging.debug("Example domain: %s", lines_filtered[0])
-
-        if source.get("scrape"):
-            logging.debug("Added %s scraped domains: %s", len(added_scrape_domains), added_scrape_domains)
-            return len(added_scrape_domains), len(lines_filtered)
-
-        return added_domains, len(lines_filtered)
+        return added_domains, added_scrape_domains
 
     def process(self, source: Dict[str, Any]) -> bool:
         """Process the given source and generate disposable data.
@@ -710,25 +726,8 @@ class disposableHostGenerator:
                     if msg == "2":  # Engine.IO ping -> pong
                         ws.send("3")
                         continue
-                    m = re.match(r"43(\d+)(\[.*\])$", msg, re.S)
-                    if not m:
-                        continue  # server events like connection_warning
-                    acks += 1
-                    try:
-                        payload = json.loads(m.group(2))
-                    except ValueError:
-                        continue
-                    if not payload or not isinstance(payload[0], dict):
-                        continue
-                    if int(m.group(1)) == gen_id:
-                        domain = (payload[0].get("emailData") or {}).get("domain")
-                        if domain:
-                            domains.add(domain.lower())
-                        continue
-                    for entry in payload[0].get("domains") or []:
-                        name = entry.get("name")
-                        if name and entry.get("status") == 1:
-                            domains.add(name.lower())
+                    if self._ninja_handle_ack(msg, gen_id, domains):
+                        acks += 1
             finally:
                 ws.close()
         except Exception as e:
@@ -739,6 +738,38 @@ class disposableHostGenerator:
             logging.warning("No domains found for tempmail.ninja")
 
         return sorted(domains)
+
+    def _ninja_handle_ack(self, msg: str, gen_id: int, domains: Set[str]) -> bool:
+        """Handle one tempmail.ninja Socket.IO message.
+
+        Args:
+            msg: Raw text frame.
+            gen_id: Request id of the ``generate_temp_mail`` call.
+            domains: Set to collect domains into.
+
+        Returns:
+            True if the message was a request ack (``43<id>[...]``), False for
+            pings, server events and other non-ack frames.
+        """
+        m = re.match(r"43(\d+)(\[.*\])$", msg, re.S)
+        if not m:
+            return False  # server events like connection_warning
+        try:
+            payload = json.loads(m.group(2))
+        except ValueError:
+            return True
+        if not payload or not isinstance(payload[0], dict):
+            return True
+        if int(m.group(1)) == gen_id:
+            domain = (payload[0].get("emailData") or {}).get("domain")
+            if domain:
+                domains.add(domain.lower())
+            return True
+        for entry in payload[0].get("domains") or []:
+            name = entry.get("name")
+            if name and entry.get("status") == 1:
+                domains.add(name.lower())
+        return True
 
     def _processTempMailOrg(self) -> Optional[List[str]]:
         """Fetch the currently assigned mailbox domain from temp-mail.org via FlareSolverr.
