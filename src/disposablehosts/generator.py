@@ -35,10 +35,6 @@ class DeltaCheckError(RuntimeError):
 class disposableHostGenerator:
     """Generator for collecting and validating disposable email domains."""
 
-    # Source types we crawl ourselves - eligible for retention of previously
-    # seen domains. Upstream compilations (list/json/sha1/file) are excluded.
-    RETAIN_SOURCE_TYPES = ("custom", "html", "ws")
-
     sources: List[Dict[str, Any]] = [  # noqa: RUF012 - Mutable default is intentional, copied in __init__
         {"type": "list", "external": True, "src": "https://gist.githubusercontent.com/adamloving/4401361/raw/"},
         {"type": "list", "external": True, "src": "https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/"},
@@ -61,25 +57,25 @@ class disposableHostGenerator:
             "external": True,
             "src": "https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/refs/heads/master/emailondeck.com_domains_from_bdea.cc.txt",
         },
-        {"type": "json", "src": "https://inboxes.com/api/v2/domain"},
-        {"type": "json", "src": "https://api.internal.temp-mail.io/api/v2/domains"},
-        {"type": "json", "src": "https://mailforspams.com/api/v1/domains"},
+        {"type": "json", "src": "https://inboxes.com/api/v2/domain", "retain": True},
+        {"type": "json", "src": "https://api.internal.temp-mail.io/api/v2/domains", "retain": True},
+        {"type": "json", "src": "https://mailforspams.com/api/v1/domains", "retain": True},
         # fakemail.net - working again (HTTP 200)
-        {"type": "html", "src": "https://www.fakemail.net/index/index", "regex": DOMAIN_SEARCH_RE},
+        {"type": "html", "src": "https://www.fakemail.net/index/index", "regex": DOMAIN_SEARCH_RE, "retain": True},
         # mailpoof.com - DNS NXDOMAIN, service permanently offline
         # {"type": "json", "src": "https://api.mailpoof.com/domains"},
         # dropmail.me - WebSocket URL changed to /api/graphql/<token>/websocket, needs new implementation
         # {"type": "ws", "src": "wss://dropmail.me/websocket"},
         # tempmail.ninja - Nuxt SPA backed by a Socket.IO service (no domains in markup)
-        {"type": "custom", "src": "TempmailNinja", "scrape": True},
+        {"type": "custom", "src": "TempmailNinja", "scrape": True, "retain": True},
         # tmp.al - luxusmail.org redirects here (HTTP 301), now an Android app
         # TODO: Investigate Android app - may need new extraction method
         # {"type": "html", "src": "https://tmp.al",
         #     "regex": re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
         # tempmailo.com - interactive Turnstile challenge, flaresolverr cannot solve
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
-        {"type": "custom", "src": "Tempamail"},
-        {"type": "custom", "src": "AdGuardTempMail", "scrape": True},
+        {"type": "custom", "src": "Tempamail", "retain": True},
+        {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
         # correotemporal.org - redirects to tempmail.ninja (HTTP 301)
@@ -92,41 +88,58 @@ class disposableHostGenerator:
                 re.compile(r"""<div class=\"container text-center\">\s+<div[^>]+>(.+?)</div>\s+</div>""", re.I | re.DOTALL),
                 DOMAIN_SEARCH_RE,
             ],
+            "retain": True,
         },
         {
             "type": "html",
             "src": "https://emailfake.com",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
         {
             "type": "html",
             "src": "https://email-fake.com",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
-        {"type": "html", "src": "https://tempm.com", "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), "scrape": True},
+        {
+            "type": "html",
+            "src": "https://tempm.com",
+            "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
+            "scrape": True,
+            "retain": True,
+        },
         {
             "type": "html",
             "src": "https://mail-fake.com",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
         {
             "type": "html",
             "src": "https://generator.email",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
-        {"type": "html", "src": "https://www.guerrillamail.com/en/"},
-        {"type": "html", "src": "https://www.trash-mail.com/inbox/"},
+        {"type": "html", "src": "https://www.guerrillamail.com/en/", "retain": True},
+        {"type": "html", "src": "https://www.trash-mail.com/inbox/", "retain": True},
         {
             "type": "html",
             "src": "https://mail-temp.com",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
-        {"type": "html", "src": "https://www.temporary-mail.net", "regex": re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
+        {
+            "type": "html",
+            "src": "https://www.temporary-mail.net",
+            "regex": re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I),
+            "retain": True,
+        },
         {
             "type": "html",
             "src": "https://nospam.today",
@@ -135,20 +148,33 @@ class disposableHostGenerator:
                 re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
                 re.compile(r"""\&quot;([^\&]+)\&quot;"""),
             ],
+            "retain": True,
         },
         {
             "type": "html",
             "src": "https://tempmail.plus/en/",
             "regex": re.compile(r"""<button type=\"button\" class=\"dropdown-item\">([^<]+)</button>""", re.I),
+            "retain": True,
         },
-        {"type": "html", "src": "https://spamok.nl/demo" + generate_random_string(8), "regex": re.compile(r"""<option\s+value="([^"]+)">""", re.I)},
-        {"type": "html", "src": "https://tempr.email", "regex": re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
+        {
+            "type": "html",
+            "src": "https://spamok.nl/demo" + generate_random_string(8),
+            "regex": re.compile(r"""<option\s+value="([^"]+)">""", re.I),
+            "retain": True,
+        },
+        {
+            "type": "html",
+            "src": "https://tempr.email",
+            "regex": re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
+            "retain": True,
+        },
         {
             "type": "html",
             "src": "https://yopmail.com/domain?d=all",
             "regex": [
                 re.compile(r"@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", re.I),
             ],
+            "retain": True,
         },
     ]
 
@@ -208,10 +234,10 @@ class disposableHostGenerator:
             self.sources.insert(0, {"type": "file", "src": self.options["file"]})
 
         if os.environ.get("DUSTMAIL_API_KEY"):
-            self.sources.append({"type": "custom", "src": "Dustmail"})
+            self.sources.append({"type": "custom", "src": "Dustmail", "retain": True})
 
         if os.environ.get("FLARESOLVERR_URL"):
-            self.sources.append({"type": "custom", "src": "TempMailOrg", "scrape": True})
+            self.sources.append({"type": "custom", "src": "TempMailOrg", "scrape": True, "retain": True})
 
         # Load remote URL if no custom list is defined
         if self.options.get("whitelist") is None:
@@ -777,13 +803,11 @@ class disposableHostGenerator:
     def _source_retains(self, source: Dict[str, Any]) -> bool:
         """Whether a source's seen domains are retained across runs.
 
-        Enabled by default for sources we crawl ourselves (custom/html/ws);
-        upstream compilations (list/json/sha1/file) are excluded. Per-source
-        override via the ``retain`` flag.
+        Opt-in per source via the ``retain`` flag - set on sources we crawl
+        ourselves so a transient failure or rotating domain pool does not drop
+        previously seen domains. Upstream compilations stay unflagged.
         """
-        if "retain" in source:
-            return bool(source["retain"])
-        return source.get("type") in self.RETAIN_SOURCE_TYPES
+        return bool(source.get("retain", False))
 
     def _load_source_cache(self) -> None:
         """Load the per-source retention cache next to the output file."""

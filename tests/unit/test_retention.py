@@ -13,28 +13,34 @@ def _gen(tmp_path, **options):
 
 
 class TestSourceRetains:
-    """Retention eligibility per source type."""
+    """Retention is opt-in via the per-source ``retain`` flag."""
 
-    @pytest.mark.parametrize("stype", ["custom", "html", "ws"])
-    def test_crawled_types_retain(self, tmp_path, stype):
-        assert _gen(tmp_path)._source_retains({"type": stype, "src": "x"})
+    @pytest.mark.parametrize("stype", ["custom", "html", "ws", "json", "list"])
+    def test_retain_flag_enables_any_type(self, tmp_path, stype):
+        assert _gen(tmp_path)._source_retains({"type": stype, "src": "x", "retain": True})
 
-    @pytest.mark.parametrize("stype", ["list", "json", "sha1", "file", "whitelist", "greylist"])
-    def test_compilation_types_do_not_retain(self, tmp_path, stype):
+    @pytest.mark.parametrize("stype", ["custom", "html", "ws", "json", "list", "sha1", "file"])
+    def test_unflagged_sources_do_not_retain(self, tmp_path, stype):
         assert not _gen(tmp_path)._source_retains({"type": stype, "src": "x"})
 
-    def test_retain_flag_overrides_default(self, tmp_path):
-        gen = _gen(tmp_path)
-        assert gen._source_retains({"type": "list", "src": "x", "retain": True})
-        assert not gen._source_retains({"type": "custom", "src": "x", "retain": False})
+    def test_retain_false_explicit(self, tmp_path):
+        assert not _gen(tmp_path)._source_retains({"type": "custom", "src": "x", "retain": False})
+
+    def test_configured_sources_flagged_correctly(self):
+        """Crawled sources are flagged, upstream compilations are not."""
+        flagged = {s["src"] for s in disposableHostGenerator().sources if s.get("retain")}
+        unflagged = {s["src"] for s in disposableHostGenerator().sources if not s.get("retain")}
+        assert flagged  # sanity: at least some sources retain
+        compilation_types = ("list", "sha1", "file", "whitelist", "whitelist_file", "greylist", "greylist_file")
+        assert all(s.get("type") in compilation_types for s in disposableHostGenerator().sources if s["src"] in unflagged)
 
 
 class TestRetentionStamping:
     """_postprocess_data records seen domains for retained sources."""
 
-    def test_stamps_domains_for_crawled_source(self, tmp_path):
+    def test_stamps_domains_for_retained_source(self, tmp_path):
         gen = _gen(tmp_path)
-        source = {"type": "custom", "src": "TestSrc"}
+        source = {"type": "custom", "src": "TestSrc", "retain": True}
         gen._postprocess_data(source, b"", ["alpha-test.com", "beta-test.org"])
         assert set(gen.source_cache["TestSrc"]) == {"alpha-test.com", "beta-test.org"}
 
@@ -45,7 +51,7 @@ class TestRetentionStamping:
 
     def test_no_stamp_on_empty_results(self, tmp_path):
         gen = _gen(tmp_path)
-        res = gen._postprocess_data({"type": "custom", "src": "TestSrc"}, b"", [])
+        res = gen._postprocess_data({"type": "custom", "src": "TestSrc", "retain": True}, b"", [])
         assert res is False
         assert gen.source_cache == {}
 
