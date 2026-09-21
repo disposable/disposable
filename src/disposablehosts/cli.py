@@ -3,7 +3,7 @@
 import argparse
 import sys
 
-from .generator import disposableHostGenerator
+from .generator import DeltaCheckError, disposableHostGenerator
 
 
 def main() -> None:
@@ -114,6 +114,20 @@ def main() -> None:
         help="skip domain scraping - only use static sources",
     )
     parser.add_argument(
+        "--retention-days",
+        type=int,
+        dest="retention_days",
+        help="retain domains of crawled sources for N days, default: 30 (0 disables)",
+        default=30,
+    )
+    parser.add_argument(
+        "--max-delta-ratio",
+        type=float,
+        dest="max_delta_ratio",
+        help="abort if more than this fraction of domains would be removed, default: 0.2 (0 disables)",
+        default=0.2,
+    )
+    parser.add_argument(
         "--skip-src",
         dest="skip_src",
         action="append",
@@ -134,13 +148,16 @@ def main() -> None:
 
     options = parser.parse_args()
     dhg = disposableHostGenerator(vars(options))
-    if options.list_sources:
-        dhg.list_sources()
-    elif dhg.generate() or options.src_filter is not None:
-        exit_status = 0
-        dhg.write_to_file()
-        if options.dedicated_strict:
-            dhg.add_greylist()
-            dhg.out_file = "domains_strict"
+    try:
+        if options.list_sources:
+            dhg.list_sources()
+        elif dhg.generate() or options.src_filter is not None:
+            exit_status = 0
             dhg.write_to_file()
+            if options.dedicated_strict:
+                dhg.add_greylist()
+                dhg.out_file = "domains_strict"
+                dhg.write_to_file()
+    except DeltaCheckError as e:
+        print(f"error: {e}", file=sys.stderr)
     sys.exit(exit_status)

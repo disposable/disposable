@@ -142,6 +142,17 @@ def verify_source(source: Dict[str, Any]) -> Tuple[bool, str, int]:
             # WebSocket data parsing would go here
             return True, "WebSocket connected", 0
 
+        if src_type == "custom":
+            gen = disposableHostGenerator(options={"verbose": False})
+            handler = getattr(gen, f"_process{src_url}", None)
+            if handler is None:
+                return False, f"No handler _process{src_url}", 0
+            lines = handler()
+            if not lines:
+                return False, "Custom handler returned no data", 0
+            domains = [d for d in (str(line).lower().strip(" .,;@") for line in lines) if check_valid_domain(d)]
+            return len(domains) > 0, f"Returned {len(domains)} valid domains", len(domains)
+
         # HTTP-based sources
         headers = {}
         if src_type == "json":

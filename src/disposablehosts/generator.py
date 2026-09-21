@@ -28,6 +28,10 @@ from .sources.websocket import fetch_websocket_source
 from .utils.dns import fetch_MX
 
 
+class DeltaCheckError(RuntimeError):
+    """Raised when a run would remove too many domains (likely source outage)."""
+
+
 class disposableHostGenerator:
     """Generator for collecting and validating disposable email domains."""
 
@@ -53,25 +57,25 @@ class disposableHostGenerator:
             "external": True,
             "src": "https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/refs/heads/master/emailondeck.com_domains_from_bdea.cc.txt",
         },
-        {"type": "json", "src": "https://inboxes.com/api/v2/domain"},
-        {"type": "json", "src": "https://api.internal.temp-mail.io/api/v2/domains"},
-        {"type": "json", "src": "https://mailforspams.com/api/v1/domains"},
+        {"type": "json", "src": "https://inboxes.com/api/v2/domain", "retain": True},
+        {"type": "json", "src": "https://api.internal.temp-mail.io/api/v2/domains", "retain": True},
+        {"type": "json", "src": "https://mailforspams.com/api/v1/domains", "retain": True},
         # fakemail.net - working again (HTTP 200)
-        {"type": "html", "src": "https://www.fakemail.net/index/index", "regex": DOMAIN_SEARCH_RE},
+        {"type": "html", "src": "https://www.fakemail.net/index/index", "regex": DOMAIN_SEARCH_RE, "retain": True},
         # mailpoof.com - DNS NXDOMAIN, service permanently offline
         # {"type": "json", "src": "https://api.mailpoof.com/domains"},
         # dropmail.me - WebSocket URL changed to /api/graphql/<token>/websocket, needs new implementation
         # {"type": "ws", "src": "wss://dropmail.me/websocket"},
         # tempmail.ninja - Nuxt SPA backed by a Socket.IO service (no domains in markup)
-        {"type": "custom", "src": "TempmailNinja", "scrape": True},
+        {"type": "custom", "src": "TempmailNinja", "scrape": True, "retain": True},
         # tmp.al - luxusmail.org redirects here (HTTP 301), now an Android app
         # TODO: Investigate Android app - may need new extraction method
         # {"type": "html", "src": "https://tmp.al",
         #     "regex": re.compile(r"""<a.+?domain-selector\"[^>]+>@([a-z0-9\.-]{1,128})""", re.I)},
         # tempmailo.com - interactive Turnstile challenge, flaresolverr cannot solve
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
-        {"type": "custom", "src": "Tempamail"},
-        {"type": "custom", "src": "AdGuardTempMail", "scrape": True},
+        {"type": "custom", "src": "Tempamail", "retain": True},
+        {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
         # correotemporal.org - redirects to tempmail.ninja (HTTP 301)
@@ -84,41 +88,58 @@ class disposableHostGenerator:
                 re.compile(r"""<div class=\"container text-center\">\s+<div[^>]+>(.+?)</div>\s+</div>""", re.I | re.DOTALL),
                 DOMAIN_SEARCH_RE,
             ],
+            "retain": True,
         },
         {
             "type": "html",
             "src": "https://emailfake.com",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
         {
             "type": "html",
             "src": "https://email-fake.com",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
-        {"type": "html", "src": "https://tempm.com", "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I), "scrape": True},
+        {
+            "type": "html",
+            "src": "https://tempm.com",
+            "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
+            "scrape": True,
+            "retain": True,
+        },
         {
             "type": "html",
             "src": "https://mail-fake.com",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
         {
             "type": "html",
             "src": "https://generator.email",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
-        {"type": "html", "src": "https://www.guerrillamail.com/en/"},
-        {"type": "html", "src": "https://www.trash-mail.com/inbox/"},
+        {"type": "html", "src": "https://www.guerrillamail.com/en/", "retain": True},
+        {"type": "html", "src": "https://www.trash-mail.com/inbox/", "retain": True},
         {
             "type": "html",
             "src": "https://mail-temp.com",
             "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
             "scrape": True,
+            "retain": True,
         },
-        {"type": "html", "src": "https://www.temporary-mail.net", "regex": re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I)},
+        {
+            "type": "html",
+            "src": "https://www.temporary-mail.net",
+            "regex": re.compile(r"""<a.+?data-mailhost=\"@?([a-z0-9\.-]{1,128})\"""", re.I),
+            "retain": True,
+        },
         {
             "type": "html",
             "src": "https://nospam.today",
@@ -127,20 +148,33 @@ class disposableHostGenerator:
                 re.compile(r"""\&quot;domains\&quot;:\[([^\]]+)\]"""),
                 re.compile(r"""\&quot;([^\&]+)\&quot;"""),
             ],
+            "retain": True,
         },
         {
             "type": "html",
             "src": "https://tempmail.plus/en/",
             "regex": re.compile(r"""<button type=\"button\" class=\"dropdown-item\">([^<]+)</button>""", re.I),
+            "retain": True,
         },
-        {"type": "html", "src": "https://spamok.nl/demo" + generate_random_string(8), "regex": re.compile(r"""<option\s+value="([^"]+)">""", re.I)},
-        {"type": "html", "src": "https://tempr.email", "regex": re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)},
+        {
+            "type": "html",
+            "src": "https://spamok.nl/demo" + generate_random_string(8),
+            "regex": re.compile(r"""<option\s+value="([^"]+)">""", re.I),
+            "retain": True,
+        },
+        {
+            "type": "html",
+            "src": "https://tempr.email",
+            "regex": re.compile(r"""<option\s+value[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I),
+            "retain": True,
+        },
         {
             "type": "html",
             "src": "https://yopmail.com/domain?d=all",
             "regex": [
                 re.compile(r"@([a-zA-Z0-9.-]+\.[a-zA-Z]{2,})", re.I),
             ],
+            "retain": True,
         },
     ]
 
@@ -185,6 +219,13 @@ class disposableHostGenerator:
         self.skip: Set[str] = set()
         self.grey: Set[str] = set()
         self.source_map: Dict[str, Union[Set[str], List[str]]] = {}
+        self.source_cache: Dict[str, Dict[str, float]] = {}
+        self._cache_written = False
+
+        retention_days = self.options.get("retention_days")
+        self.retention_days = 30 if retention_days is None else int(retention_days)
+        max_delta_ratio = self.options.get("max_delta_ratio")
+        self.max_delta_ratio = 0.2 if max_delta_ratio is None else float(max_delta_ratio)
 
         # Copy class sources to instance to avoid mutating ClassVar
         self.sources = list(self.sources)
@@ -193,10 +234,10 @@ class disposableHostGenerator:
             self.sources.insert(0, {"type": "file", "src": self.options["file"]})
 
         if os.environ.get("DUSTMAIL_API_KEY"):
-            self.sources.append({"type": "custom", "src": "Dustmail"})
+            self.sources.append({"type": "custom", "src": "Dustmail", "retain": True})
 
         if os.environ.get("FLARESOLVERR_URL"):
-            self.sources.append({"type": "custom", "src": "TempMailOrg", "scrape": True})
+            self.sources.append({"type": "custom", "src": "TempMailOrg", "scrape": True, "retain": True})
 
         # Load remote URL if no custom list is defined
         if self.options.get("whitelist") is None:
@@ -316,6 +357,44 @@ class disposableHostGenerator:
             True if source is whitelist/greylist, False if no results,
             or tuple of (added_count, found_count).
         """
+        lines_filtered = self._filter_source_hosts(source, data, lines)
+
+        if source["type"] in ("whitelist", "whitelist_file", "sha1"):
+            self.skip.update(lines_filtered)
+            return True
+
+        if source["type"] in ("greylist", "greylist_file"):
+            self.grey.update(lines_filtered)
+            return True
+
+        if not lines_filtered:
+            logging.warning("No results for source %s", source)
+            return False
+
+        self.source_map[source["src"]] = self.scrape if source.get("scrape") else lines_filtered
+
+        if self._source_retains(source):
+            cache_entry = self.source_cache.setdefault(str(source["src"]), {})
+            now = time.time()
+            for host in lines_filtered:
+                cache_entry[host] = now
+
+        added_domains, added_scrape_domains = self._merge_domains(source, lines_filtered)
+
+        logging.debug("Example domain: %s", lines_filtered[0])
+
+        if source.get("scrape"):
+            logging.debug("Added %s scraped domains: %s", len(added_scrape_domains), added_scrape_domains)
+            return len(added_scrape_domains), len(lines_filtered)
+
+        return added_domains, len(lines_filtered)
+
+    def _filter_source_hosts(self, source: Dict[str, Any], data: bytes, lines: List[str]) -> List[str]:
+        """Normalize source lines to valid domains.
+
+        Falls back to a domain regex over the raw data when no valid lines are
+        found, and strips the source's own hostname artifacts for html sources.
+        """
         lines_filtered = [line.lower().strip(" .,;@") for line in lines]
         lines_filtered = list(filter(self.check_valid_domains, lines_filtered))
 
@@ -329,22 +408,14 @@ class disposableHostGenerator:
                 src_host = src_host.lower()
                 lines_filtered = [host for host in lines_filtered if host == src_host or not src_host.endswith(host) or src_host.endswith("." + host)]
 
-        if source["type"] in ("whitelist", "whitelist_file", "sha1"):
-            for host in lines_filtered:
-                self.skip.add(host)
-            return True
+        return lines_filtered
 
-        if source["type"] in ("greylist", "greylist_file"):
-            for host in lines_filtered:
-                self.grey.add(host)
-            return True
+    def _merge_domains(self, source: Dict[str, Any], lines_filtered: List[str]) -> Tuple[int, List[str]]:
+        """Merge validated hosts into domains/legacy/sha1/scrape sets.
 
-        if not lines_filtered:
-            logging.warning("No results for source %s", source)
-            return False
-
-        self.source_map[source["src"]] = self.scrape if source.get("scrape") else lines_filtered
-
+        Returns:
+            Tuple of (number of newly added domains, list of new scrape domains).
+        """
         added_domains = 0
         added_scrape_domains: List[str] = []
         for host in lines_filtered:
@@ -362,15 +433,7 @@ class disposableHostGenerator:
             if source.get("scrape") and host not in self.scrape:
                 self.scrape.add(host)
                 added_scrape_domains.append(host)
-
-        if lines_filtered:
-            logging.debug("Example domain: %s", lines_filtered[0])
-
-        if source.get("scrape"):
-            logging.debug("Added %s scraped domains: %s", len(added_scrape_domains), added_scrape_domains)
-            return len(added_scrape_domains), len(lines_filtered)
-
-        return added_domains, len(lines_filtered)
+        return added_domains, added_scrape_domains
 
     def process(self, source: Dict[str, Any]) -> bool:
         """Process the given source and generate disposable data.
@@ -663,25 +726,8 @@ class disposableHostGenerator:
                     if msg == "2":  # Engine.IO ping -> pong
                         ws.send("3")
                         continue
-                    m = re.match(r"43(\d+)(\[.*\])$", msg, re.S)
-                    if not m:
-                        continue  # server events like connection_warning
-                    acks += 1
-                    try:
-                        payload = json.loads(m.group(2))
-                    except ValueError:
-                        continue
-                    if not payload or not isinstance(payload[0], dict):
-                        continue
-                    if int(m.group(1)) == gen_id:
-                        domain = (payload[0].get("emailData") or {}).get("domain")
-                        if domain:
-                            domains.add(domain.lower())
-                        continue
-                    for entry in payload[0].get("domains") or []:
-                        name = entry.get("name")
-                        if name and entry.get("status") == 1:
-                            domains.add(name.lower())
+                    if self._ninja_handle_ack(msg, gen_id, domains):
+                        acks += 1
             finally:
                 ws.close()
         except Exception as e:
@@ -692,6 +738,38 @@ class disposableHostGenerator:
             logging.warning("No domains found for tempmail.ninja")
 
         return sorted(domains)
+
+    def _ninja_handle_ack(self, msg: str, gen_id: int, domains: Set[str]) -> bool:
+        """Handle one tempmail.ninja Socket.IO message.
+
+        Args:
+            msg: Raw text frame.
+            gen_id: Request id of the ``generate_temp_mail`` call.
+            domains: Set to collect domains into.
+
+        Returns:
+            True if the message was a request ack (``43<id>[...]``), False for
+            pings, server events and other non-ack frames.
+        """
+        m = re.match(r"43(\d+)(\[.*\])$", msg, re.S)
+        if not m:
+            return False  # server events like connection_warning
+        try:
+            payload = json.loads(m.group(2))
+        except ValueError:
+            return True
+        if not payload or not isinstance(payload[0], dict):
+            return True
+        if int(m.group(1)) == gen_id:
+            domain = (payload[0].get("emailData") or {}).get("domain")
+            if domain:
+                domains.add(domain.lower())
+            return True
+        for entry in payload[0].get("domains") or []:
+            name = entry.get("name")
+            if name and entry.get("status") == 1:
+                domains.add(name.lower())
+        return True
 
     def _processTempMailOrg(self) -> Optional[List[str]]:
         """Fetch the currently assigned mailbox domain from temp-mail.org via FlareSolverr.
@@ -752,6 +830,66 @@ class disposableHostGenerator:
         except FileNotFoundError:
             # Expected on first run - optional file may not exist yet
             pass
+
+    def _source_retains(self, source: Dict[str, Any]) -> bool:
+        """Whether a source's seen domains are retained across runs.
+
+        Opt-in per source via the ``retain`` flag - set on sources we crawl
+        ourselves so a transient failure or rotating domain pool does not drop
+        previously seen domains. Upstream compilations stay unflagged.
+        """
+        return bool(source.get("retain", False))
+
+    def _load_source_cache(self) -> None:
+        """Load the per-source retention cache next to the output file."""
+        path = os.path.join(os.path.dirname(self.out_file) or ".", "source_cache.json")
+        try:
+            with open(path) as f:
+                raw = json.load(f)
+            if isinstance(raw, dict):
+                self.source_cache = {str(src): {str(d): float(ts) for d, ts in entries.items()} for src, entries in raw.items() if isinstance(entries, dict)}
+        except (FileNotFoundError, ValueError, OSError):
+            # Expected on first run or after cache cleanup - start empty
+            pass
+
+    def _write_source_cache(self) -> None:
+        """Persist the per-source retention cache, pruning expired entries."""
+        if self._cache_written:
+            return
+        self._cache_written = True
+        path = os.path.join(os.path.dirname(self.out_file) or ".", "source_cache.json")
+        cutoff = time.time() - self.retention_days * 86400
+        cache = {src: {d: ts for d, ts in entries.items() if ts >= cutoff} for src, entries in self.source_cache.items()}
+        cache = {src: entries for src, entries in cache.items() if entries}
+        with open(path, "w") as f:
+            json.dump(cache, f, indent=2, sort_keys=True)
+
+    def _apply_retention(self) -> None:
+        """Merge non-expired cached domains of crawled sources into the result.
+
+        Rotating-pool samplers only return the currently active domain(s), and
+        transient failures would otherwise drop a source's contribution. Cached
+        domains are merged before whitelisting so the whitelist still applies.
+        """
+        if not self.retention_days:
+            return
+        if not self.source_cache:
+            self._load_source_cache()
+
+        cutoff = time.time() - self.retention_days * 86400
+        retained = 0
+        for entries in self.source_cache.values():
+            for host, seen in entries.items():
+                if seen >= cutoff and host not in self.domains and self.check_valid_domains(host):
+                    self.domains.add(host)
+                    self.legacy_domains.add(host)
+                    retained += 1
+                    try:
+                        self.sha1.add(hashlib.sha1(host.encode("idna")).hexdigest())  # nosec B324 - SHA1 used for domain hashing, not security
+                    except Exception:  # nosec B110 - Intentional fallback for encoding errors
+                        pass
+        if retained:
+            logging.info("Retained %s domain(s) from source cache", retained)
 
     def check_valid_domains(self, host: str) -> bool:
         """Check if the given host is a valid domain name.
@@ -891,19 +1029,48 @@ class disposableHostGenerator:
             logging.info("Fetched: %s", self.domains)
         return True
 
+    def _enforce_max_delta(self) -> None:
+        """Abort the run when too many domains would be removed.
+
+        A mass removal usually indicates a source outage or broken fetch rather
+        than legitimate upstream churn. Raises before any output is written so
+        callers (update.sh) keep the previous list.
+        """
+        if not self.max_delta_ratio:
+            return
+        if self.options.get("src_filter") or self.options.get("file"):
+            return  # partial runs are not representative
+        if not self.old_domains:
+            self.read_files()
+        if not self.old_domains:
+            return  # first run
+
+        removed = self.old_domains - self.domains
+        min_abs_change = 50
+        if len(removed) > min_abs_change and len(removed) / len(self.old_domains) > self.max_delta_ratio:
+            raise DeltaCheckError(
+                f"Delta check failed: {len(removed)} of {len(self.old_domains)} domains would be removed "
+                f"(> {self.max_delta_ratio:.0%}). Refusing to write output."
+            )
+
     def generate(self) -> bool:
         """Fetch all data and generate lists.
 
         Returns:
             True if data was fetched and there are changes, False otherwise.
         """
+        self._load_source_cache()
         self._fetch_sources()
+        self._apply_retention()
         self._apply_whitelist()
         self._verify_mx_records()
-        return self._log_generation_results()
+        changed = self._log_generation_results()
+        self._enforce_max_delta()
+        return changed
 
     def write_to_file(self) -> None:
         """Write new list to file(s)."""
+        self._write_source_cache()
         domains = sorted(self.domains)
         with open(f"{self.out_file}.txt", "w") as ff:
             ff.write("\n".join(domains))
