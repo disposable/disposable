@@ -46,3 +46,10 @@ opoczta.pl
 
 # Brave Email Aliases https://github.com/disposable/disposable/issues/288
 bravealias.com
+
+# Apple Hide My Email
+privaterelay.appleid.com
+
+# leaked into upstream lists - keep policy-consistent (strict tier only)
+relay.firefox.com
+addy.io
