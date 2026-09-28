@@ -43,3 +43,6 @@ poczta.onet.eu
 onet.com.pl
 amorki.pl
 opoczta.pl
+
+# Brave Email Aliases https://github.com/disposable/disposable/issues/288
+bravealias.com
