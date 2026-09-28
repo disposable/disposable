@@ -6,7 +6,7 @@ import random
 
 # Regex patterns for validation and extraction
 RETRY_ERRORS_RE = re.compile(r"""(The read operation timed out|urlopen error timed out)""", re.I)
-DOMAIN_RE = re.compile(r"^[a-z\d-]{1,63}(\.[a-z-\.]{2,63})+$")
+DOMAIN_RE = re.compile(r"^[a-z\d-]{1,63}(\.[a-z-\.\d]{2,63})+$")
 DOMAIN_SEARCH_RE = re.compile(r'["\'\s>]([a-z\d\.-]{1,63}\.[a-z\-]{2,63})["\'\s<]', re.I)
 HTML_GENERIC_RE = re.compile(r"""<option[^>]*>@?([a-z\-\.\&#;\d+]+)\s*(\(PW\))?<\/option>""", re.I)
 SHA1_RE = re.compile(r"^[a-fA-F0-9]{40}")
