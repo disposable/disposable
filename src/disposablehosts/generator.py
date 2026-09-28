@@ -75,6 +75,7 @@ class disposableHostGenerator:
         # tempmailo.com - interactive Turnstile challenge, flaresolverr cannot solve
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
         {"type": "custom", "src": "Tempamail", "retain": True},
+        {"type": "custom", "src": "YYDSMail", "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -555,6 +556,24 @@ class disposableHostGenerator:
             return [d["name"] for d in res.get("domains", []) if d.get("name")]
         except Exception as e:
             logging.warning("Failed to fetch tempamail.com domains: %s", e)
+            return None
+
+    def _processYYDSMail(self) -> Optional[List[str]]:
+        """Fetch public domains from the YYDS Mail platform (215.im).
+
+        YYDS Mail lets users point their own domains at a shared MX
+        (smtp.215.im), so the front domains churn constantly. The public
+        API exposes the selectable domain pool at GET /v1/domains - see
+        https://maliapi.215.im/v1/llms.txt.
+
+        Returns:
+            List of domain strings, or None if request fails.
+        """
+        try:
+            res = httpx.get("https://maliapi.215.im/v1/domains", timeout=15).json()
+            return [d["domain"] for d in res.get("data", []) if d.get("domain") and d.get("isPublic")]
+        except Exception as e:
+            logging.warning("Failed to fetch maliapi.215.im domains: %s", e)
             return None
 
     def _processDustmail(self) -> Optional[List[str]]:

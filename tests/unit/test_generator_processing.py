@@ -377,6 +377,34 @@ class TestCustomSources:
         mock_post.side_effect = Exception("boom")
         assert gen._processTempamail() is None
 
+    @patch("disposablehosts.generator.httpx.get")
+    def test_process_yydsmail(self, mock_get):
+        """YYDSMail source reads the public domain pool from /v1/domains."""
+        gen = disposableHostGenerator()
+        mock_get.return_value = type(
+            "R",
+            (),
+            {
+                "json": lambda s: {
+                    "success": True,
+                    "data": [
+                        {"domain": "yyds-mail-01.cc.cd", "isPublic": True},
+                        {"domain": "xuicf1r.site", "isPublic": True},
+                        {"domain": "owner-only.example", "isPublic": False},
+                        {"isPublic": True},
+                    ],
+                }
+            },
+        )()
+        assert gen._processYYDSMail() == ["yyds-mail-01.cc.cd", "xuicf1r.site"]
+
+    @patch("disposablehosts.generator.httpx.get")
+    def test_process_yydsmail_failure(self, mock_get):
+        """YYDSMail source returns None on request failure."""
+        gen = disposableHostGenerator()
+        mock_get.side_effect = Exception("boom")
+        assert gen._processYYDSMail() is None
+
     @patch("disposablehosts.generator.httpx.post")
     def test_process_dustmail(self, mock_post, monkeypatch):
         """Dustmail source reads meta.available_domains via API key."""
