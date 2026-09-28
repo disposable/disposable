@@ -139,6 +139,12 @@ class disposableHostGenerator:
         },
         {
             "type": "html",
+            "src": "https://mailtemps.com/",
+            "regex": re.compile(r'<option[^>]*value="((?:[a-z0-9-]+\.)+[a-z]{2,})"', re.I),
+            "retain": True,
+        },
+        {
+            "type": "html",
             "src": "https://spamok.nl/demo" + generate_random_string(8),
             "regex": re.compile(r"""<option\s+value="([^"]+)">""", re.I),
             "retain": True,
