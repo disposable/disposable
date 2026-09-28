@@ -443,6 +443,45 @@ class TestCustomSources:
         mock_post.return_value = type("R", (), {"json": lambda s: {"error": "FORBIDDEN_DOMAIN"}})()
         assert gen._processTempmailPro() is None
 
+    @patch("disposablehosts.generator.httpx.get")
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_fakemail_generator(self, mock_fetch, mock_get):
+        """Fake Mail Generator sites read the pool from /api/domains.php."""
+        gen = disposableHostGenerator()
+        mock_fetch.return_value = b'<html><meta name="api-token" content="tok123"></html>'
+        mock_get.return_value = type(
+            "R",
+            (),
+            {
+                "json": lambda s: [
+                    {"ascii": "skytopway.com", "display": "skytopway.com", "idn": False, "wc": ""},
+                    {"ascii": "zzzz.rey678.shop", "display": "", "idn": False, "wc": "rey678.shop"},
+                    {"ascii": "", "wc": ""},
+                    "not-a-dict",
+                ]
+            },
+        )()
+        assert gen._processEmailfake() == ["rey678.shop", "skytopway.com", "zzzz.rey678.shop"]
+        mock_get.assert_called_once()
+        assert mock_get.call_args[0][0] == "https://emailfake.com/api/domains.php"
+        assert mock_get.call_args[1]["headers"]["X-API-Token"] == "tok123"
+
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_fakemail_generator_no_token(self, mock_fetch):
+        """Fake Mail Generator sites return None when the api-token is absent."""
+        gen = disposableHostGenerator()
+        mock_fetch.return_value = b"<html>no token here</html>"
+        assert gen._processTempm() is None
+
+    @patch("disposablehosts.generator.httpx.get")
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_fakemail_generator_failure(self, mock_fetch, mock_get):
+        """Fake Mail Generator sites return None on request failure."""
+        gen = disposableHostGenerator()
+        mock_fetch.return_value = b'<meta name="api-token" content="t">'
+        mock_get.side_effect = Exception("boom")
+        assert gen._processMailTemp() is None
+
     @patch("disposablehosts.generator.httpx.post")
     def test_process_dustmail(self, mock_post, monkeypatch):
         """Dustmail source reads meta.available_domains via API key."""

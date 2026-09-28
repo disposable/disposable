@@ -93,50 +93,14 @@ class disposableHostGenerator:
             ],
             "retain": True,
         },
-        {
-            "type": "html",
-            "src": "https://emailfake.com",
-            "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-            "scrape": True,
-            "retain": True,
-        },
-        {
-            "type": "html",
-            "src": "https://email-fake.com",
-            "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-            "scrape": True,
-            "retain": True,
-        },
-        {
-            "type": "html",
-            "src": "https://tempm.com",
-            "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-            "scrape": True,
-            "retain": True,
-        },
-        {
-            "type": "html",
-            "src": "https://mail-fake.com",
-            "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-            "scrape": True,
-            "retain": True,
-        },
-        {
-            "type": "html",
-            "src": "https://generator.email",
-            "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-            "scrape": True,
-            "retain": True,
-        },
+        {"type": "custom", "src": "Emailfake", "scrape": True, "retain": True},
+        {"type": "custom", "src": "EmailFake", "scrape": True, "retain": True},
+        {"type": "custom", "src": "Tempm", "scrape": True, "retain": True},
+        {"type": "custom", "src": "MailFake", "scrape": True, "retain": True},
+        {"type": "custom", "src": "GeneratorEmail", "scrape": True, "retain": True},
         {"type": "html", "src": "https://www.guerrillamail.com/en/", "retain": True},
         {"type": "html", "src": "https://www.trash-mail.com/inbox/", "retain": True},
-        {
-            "type": "html",
-            "src": "https://mail-temp.com",
-            "regex": re.compile(r"""change_dropdown_list[^"]+"[^>]+>@?([a-z0-9\.-]{1,128})""", re.I),
-            "scrape": True,
-            "retain": True,
-        },
+        {"type": "custom", "src": "MailTemp", "scrape": True, "retain": True},
         {
             "type": "html",
             "src": "https://www.temporary-mail.net",
@@ -671,6 +635,66 @@ class disposableHostGenerator:
         except Exception as e:
             logging.debug("tempmailpro.io probe for %s failed: %s", domain, e)
             return False
+
+    def _fakemail_generator_domains(self, base_url: str) -> Optional[List[str]]:
+        """Fetch the mailbox domain pool of a Fake Mail Generator network site.
+
+        All sites of this family (emailfake.com, email-fake.com, tempm.com,
+        mail-fake.com, generator.email, mail-temp.com) share one template:
+        the homepage embeds an ``api-token`` meta tag and the selectable
+        domain pool is served by ``/api/domains.php`` (requires the token
+        plus a same-origin Referer, otherwise 403 "Origin/Referer
+        required"). Each entry's ``ascii`` field is a usable domain; a
+        non-empty ``wc`` marks the entry as a wildcard of that base domain.
+
+        Args:
+            base_url: Site origin, e.g. "https://emailfake.com".
+
+        Returns:
+            List of mailbox domains, or None on failure.
+        """
+        try:
+            page = remoteData.fetch_http(base_url + "/", timeout=15)
+            m = re.search(rb'meta name="api-token" content="([^"]+)"', page or b"")
+            if not m:
+                logging.warning("No api-token found on %s", base_url)
+                return None
+            res = httpx.get(
+                base_url + "/api/domains.php",
+                headers={
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0",
+                    "Referer": base_url + "/",
+                    "X-API-Token": m.group(1).decode("ascii", "replace"),
+                },
+                timeout=15,
+            ).json()
+            domains = set()
+            for entry in res if isinstance(res, list) else []:
+                if isinstance(entry, dict):
+                    domains.add(str(entry.get("ascii") or ""))
+                    domains.add(str(entry.get("wc") or ""))
+            return sorted(d for d in domains if d) or None
+        except Exception as e:
+            logging.warning("Failed to fetch domains from %s: %s", base_url, e)
+            return None
+
+    def _processEmailfake(self) -> Optional[List[str]]:
+        return self._fakemail_generator_domains("https://emailfake.com")
+
+    def _processEmailFake(self) -> Optional[List[str]]:
+        return self._fakemail_generator_domains("https://email-fake.com")
+
+    def _processTempm(self) -> Optional[List[str]]:
+        return self._fakemail_generator_domains("https://tempm.com")
+
+    def _processMailFake(self) -> Optional[List[str]]:
+        return self._fakemail_generator_domains("https://mail-fake.com")
+
+    def _processGeneratorEmail(self) -> Optional[List[str]]:
+        return self._fakemail_generator_domains("https://generator.email")
+
+    def _processMailTemp(self) -> Optional[List[str]]:
+        return self._fakemail_generator_domains("https://mail-temp.com")
 
     def _processDustmail(self) -> Optional[List[str]]:
         """Fetch shared inbox domains from dustmail.net (requires DUSTMAIL_API_KEY).
