@@ -21,6 +21,7 @@ from .constants import (
     DOMAIN_SEARCH_RE,
     generate_random_string,
 )
+from .history import DomainHistory
 from .remote_data import remoteData
 from .sources.file import fetch_file_source
 from .sources.http import fetch_http_source
@@ -199,8 +200,7 @@ class disposableHostGenerator:
         self.skip: Set[str] = set()
         self.grey: Set[str] = set()
         self.source_map: Dict[str, Union[Set[str], List[str]]] = {}
-        self.source_cache: Dict[str, Dict[str, float]] = {}
-        self._cache_written = False
+        self.domain_seen: Dict[str, Set[str]] = {}
 
         retention_days = self.options.get("retention_days")
         self.retention_days = 30 if retention_days is None else int(retention_days)
@@ -352,12 +352,7 @@ class disposableHostGenerator:
             return False
 
         self.source_map[source["src"]] = self.scrape if source.get("scrape") else lines_filtered
-
-        if self._source_retains(source):
-            cache_entry = self.source_cache.setdefault(str(source["src"]), {})
-            now = time.time()
-            for host in lines_filtered:
-                cache_entry[host] = now
+        self.domain_seen.setdefault(str(source["src"]), set()).update(lines_filtered)
 
         added_domains, added_scrape_domains = self._merge_domains(source, lines_filtered)
 
@@ -998,56 +993,38 @@ class disposableHostGenerator:
         """
         return bool(source.get("retain", False))
 
-    def _load_source_cache(self) -> None:
-        """Load the per-source retention cache next to the output file."""
-        path = os.path.join(os.path.dirname(self.out_file) or ".", "source_cache.json")
-        try:
-            with open(path) as f:
-                raw = json.load(f)
-            if isinstance(raw, dict):
-                self.source_cache = {str(src): {str(d): float(ts) for d, ts in entries.items()} for src, entries in raw.items() if isinstance(entries, dict)}
-        except (FileNotFoundError, ValueError, OSError):
-            # Expected on first run or after cache cleanup - start empty
-            pass
-
-    def _write_source_cache(self) -> None:
-        """Persist the per-source retention cache, pruning expired entries."""
-        if self._cache_written:
-            return
-        self._cache_written = True
-        path = os.path.join(os.path.dirname(self.out_file) or ".", "source_cache.json")
-        cutoff = time.time() - self.retention_days * 86400
-        cache = {src: {d: ts for d, ts in entries.items() if ts >= cutoff} for src, entries in self.source_cache.items()}
-        cache = {src: entries for src, entries in cache.items() if entries}
-        with open(path, "w") as f:
-            json.dump(cache, f, indent=2, sort_keys=True)
-
     def _apply_retention(self) -> None:
-        """Merge non-expired cached domains of crawled sources into the result.
+        """Reconcile this run into the history DB and merge retained domains.
 
-        Rotating-pool samplers only return the currently active domain(s), and
-        transient failures would otherwise drop a source's contribution. Cached
-        domains are merged before whitelisting so the whitelist still applies.
+        Every successfully fetched source reconciles its domain set into
+        ``history.duckdb`` (first_seen/last_seen/retired_at per source+domain).
+        Domains of ``retain``-flagged sources - and of sources no longer
+        configured at all - are merged back while inside the retention window,
+        so rotating pools and transient failures never drop coverage. Merging
+        happens before whitelisting so the whitelist still applies.
         """
         if not self.retention_days:
             return
-        if not self.source_cache:
-            self._load_source_cache()
 
-        cutoff = time.time() - self.retention_days * 86400
+        path = os.path.join(os.path.dirname(self.out_file) or ".", "history.duckdb")
+        retain_srcs = {str(s["src"]) for s in self.sources if self._source_retains(s)}
+        configured_srcs = {str(s["src"]) for s in self.sources}
+        with DomainHistory(path, self.retention_days) as history:
+            history.reconcile(self.domain_seen)
+            injectable = history.injectable_domains(retain_srcs, configured_srcs)
+
         retained = 0
-        for entries in self.source_cache.values():
-            for host, seen in entries.items():
-                if seen >= cutoff and host not in self.domains and self.check_valid_domains(host):
-                    self.domains.add(host)
-                    self.legacy_domains.add(host)
-                    retained += 1
-                    try:
-                        self.sha1.add(hashlib.sha1(host.encode("idna")).hexdigest())  # nosec B324 - SHA1 used for domain hashing, not security
-                    except Exception:  # nosec B110 - Intentional fallback for encoding errors
-                        pass
+        for host in injectable:
+            if host not in self.domains and self.check_valid_domains(host):
+                self.domains.add(host)
+                self.legacy_domains.add(host)
+                retained += 1
+                try:
+                    self.sha1.add(hashlib.sha1(host.encode("idna")).hexdigest())  # nosec B324 - SHA1 used for domain hashing, not security
+                except Exception:  # nosec B110 - Intentional fallback for encoding errors
+                    pass
         if retained:
-            logging.info("Retained %s domain(s) from source cache", retained)
+            logging.info("Retained %s domain(s) from history", retained)
 
     def check_valid_domains(self, host: str) -> bool:
         """Check if the given host is a valid domain name.
@@ -1217,7 +1194,6 @@ class disposableHostGenerator:
         Returns:
             True if data was fetched and there are changes, False otherwise.
         """
-        self._load_source_cache()
         self._fetch_sources()
         self._apply_retention()
         self._apply_whitelist()
@@ -1228,7 +1204,6 @@ class disposableHostGenerator:
 
     def write_to_file(self) -> None:
         """Write new list to file(s)."""
-        self._write_source_cache()
         domains = sorted(self.domains)
         with open(f"{self.out_file}.txt", "w") as ff:
             ff.write("\n".join(domains))

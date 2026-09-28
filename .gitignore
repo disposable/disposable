@@ -307,6 +307,9 @@ hs_err_pid*
 domains.json
 domains.txt
 source_cache.json
+source_cache.json.migrated
+history.duckdb
+history.duckdb.wal
 domains_sha1.json
 domains_sha1.txt
 domains_source_map.txt

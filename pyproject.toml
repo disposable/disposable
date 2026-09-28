@@ -14,6 +14,8 @@ dependencies = [
   "websocket-client>=1.0.0,<2.0.0",
   "tldextract>=5.3.0,<6.0.0",
   "httpx[http2]>=0.28.1,<0.29.0",
+  "duckdb>=1.4.0,<2.0.0",
+  "pytz>=2024.1,<2030",
 ]
 
 [project.scripts]
