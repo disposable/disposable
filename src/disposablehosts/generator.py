@@ -161,6 +161,13 @@ class disposableHostGenerator:
         },
         {
             "type": "html",
+            # Nuxt app: live pool is injected via SSR state, fallback pool in __NUXT__.config.emailDomains
+            "src": "https://10minutemail.one/",
+            "regex": re.compile(r'\\?"((?:[a-z0-9-]+\.)+[a-z]{2,})\\?"', re.I),
+            "retain": True,
+        },
+        {
+            "type": "html",
             "src": "https://5secmail.com/",
             "regex": re.compile(r'<option[^>]*value="([^"]+)"', re.I),
             "retain": True,
