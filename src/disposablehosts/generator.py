@@ -76,6 +76,8 @@ class disposableHostGenerator:
         # {"type": "custom", "src": "Tempmailo", "scrape": True},
         {"type": "custom", "src": "Tempamail", "retain": True},
         {"type": "custom", "src": "YYDSMail", "retain": True},
+        {"type": "custom", "src": "TenMinutesEmail", "scrape": True, "retain": True},
+        {"type": "custom", "src": "TempmailPro", "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -155,6 +157,12 @@ class disposableHostGenerator:
             "type": "html",
             "src": "https://tempmail.plus/en/",
             "regex": re.compile(r"""<button type=\"button\" class=\"dropdown-item\">([^<]+)</button>""", re.I),
+            "retain": True,
+        },
+        {
+            "type": "html",
+            "src": "https://5secmail.com/",
+            "regex": re.compile(r'<option[^>]*value="([^"]+)"', re.I),
             "retain": True,
         },
         {
@@ -575,6 +583,87 @@ class disposableHostGenerator:
         except Exception as e:
             logging.warning("Failed to fetch maliapi.215.im domains: %s", e)
             return None
+
+    def _processTenMinutesEmail(self) -> Optional[List[str]]:
+        """Fetch the mailbox domain assigned by 10minutes.email.
+
+        The webapp creates one inbox per call via POST /api/emails and the
+        response carries the assigned address. The API rejects incomplete
+        header sets with a 403 "suspected automation", so the browser
+        headers (notably x-origin-domain) are required. Called repeatedly
+        via the scrape loop to cover the rotating domain pool.
+
+        Returns:
+            Single-element list with the assigned domain, or None on failure.
+        """
+        headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0",
+            "Accept": "application/json, text/plain, */*",
+            "Accept-Language": "en-US,en;q=0.5",
+            "x-origin-domain": "https://www.10minutes.email",
+            "Origin": "https://www.10minutes.email",
+            "Referer": "https://www.10minutes.email/",
+        }
+        try:
+            res = httpx.post("https://api.10minutes.email/api/emails", headers=headers, json={}, timeout=15).json()
+            domain = str(res.get("email") or "").rpartition("@")[2].lower()
+            if not domain:
+                logging.warning("10minutes.email response has no email: %s", res)
+                return None
+            return [domain]
+        except Exception as e:
+            logging.warning("Failed to fetch 10minutes.email domain: %s", e)
+            return None
+
+    def _processTempmailPro(self) -> Optional[List[str]]:
+        """Fetch the public inbox domains offered by tempmailpro.io.
+
+        The webapp builds addresses client-side via generateRandomEmail(),
+        which embeds the public domain(s) in a lazily loaded bundle chunk.
+        We scan the homepage chunks for that generator, extract every
+        ``@domain`` template, and verify each candidate against the public
+        activate-session endpoint (it rejects foreign domains with
+        FORBIDDEN_DOMAIN). Paid "custom domains" are user-owned and never
+        enter this public pool.
+
+        Returns:
+            List of verified public domains, or None on failure.
+        """
+        candidates = {"tempmailpro.io"}
+        candidates.update(self._tmppro_bundle_domains())
+        verified = [d for d in sorted(candidates) if self._tmppro_accepts(d)]
+        if not verified:
+            logging.warning("No domains verified for tempmailpro.io")
+            return None
+        return verified
+
+    def _tmppro_bundle_domains(self) -> Set[str]:
+        """Extract @domain templates from the tempmailpro.io webapp bundle."""
+        domains: Set[str] = set()
+        try:
+            html = remoteData.fetch_http("https://tempmailpro.io/", timeout=15)
+            chunks = re.findall(r'src="(/_next/static/chunks/[^"]+\.js)"', html.decode("utf-8", "replace")) if html else []
+            for chunk in chunks:
+                data = remoteData.fetch_http(f"https://tempmailpro.io{chunk}", timeout=15)
+                if not data or b"generateRandomEmail" not in data:
+                    continue
+                domains.update(re.findall(r"@([a-z0-9.-]+\.[a-z]{2,})", data.decode("utf-8", "replace"), re.I))
+        except Exception as e:
+            logging.debug("tempmailpro.io bundle scan failed: %s", e)
+        return domains
+
+    def _tmppro_accepts(self, domain: str) -> bool:
+        """Probe whether tempmailpro.io accepts mailboxes under the domain."""
+        try:
+            res = httpx.post(
+                "https://tempmailpro.io/api/emails/activate-session",
+                json={"address": f"probe-{generate_random_string(8)}@{domain}"},
+                timeout=15,
+            ).json()
+            return res.get("success") is True
+        except Exception as e:
+            logging.debug("tempmailpro.io probe for %s failed: %s", domain, e)
+            return False
 
     def _processDustmail(self) -> Optional[List[str]]:
         """Fetch shared inbox domains from dustmail.net (requires DUSTMAIL_API_KEY).

@@ -406,6 +406,44 @@ class TestCustomSources:
         assert gen._processYYDSMail() is None
 
     @patch("disposablehosts.generator.httpx.post")
+    def test_process_ten_minutes_email(self, mock_post):
+        """TenMinutesEmail source extracts the domain from the created inbox."""
+        gen = disposableHostGenerator()
+        mock_post.return_value = type("R", (), {"json": lambda s: {"email": "user@10minutes.email", "accessToken": "t"}})()
+        assert gen._processTenMinutesEmail() == ["10minutes.email"]
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_ten_minutes_email_failure(self, mock_post):
+        """TenMinutesEmail source returns None on request failure."""
+        gen = disposableHostGenerator()
+        mock_post.side_effect = Exception("boom")
+        assert gen._processTenMinutesEmail() is None
+
+    @patch("disposablehosts.generator.httpx.post")
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_tempmailpro(self, mock_fetch, mock_post):
+        """TempmailPro scans the bundle for domains and verifies via activate-session."""
+        gen = disposableHostGenerator()
+
+        def fetch(url, **kwargs):
+            if url == "https://tempmailpro.io/":
+                return b'<script src="/_next/static/chunks/a.js"></script>'
+            return b"x = `${r}@tempmailpro.io` , generateRandomEmail , y = `${r}@tempmailpro.net`"
+
+        mock_fetch.side_effect = fetch
+        mock_post.return_value = type("R", (), {"json": lambda s: {"success": True}})()
+        assert gen._processTempmailPro() == ["tempmailpro.io", "tempmailpro.net"]
+
+    @patch("disposablehosts.generator.httpx.post")
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_tempmailpro_forbidden(self, mock_fetch, mock_post):
+        """TempmailPro returns None when every candidate is rejected."""
+        gen = disposableHostGenerator()
+        mock_fetch.return_value = b""
+        mock_post.return_value = type("R", (), {"json": lambda s: {"error": "FORBIDDEN_DOMAIN"}})()
+        assert gen._processTempmailPro() is None
+
+    @patch("disposablehosts.generator.httpx.post")
     def test_process_dustmail(self, mock_post, monkeypatch):
         """Dustmail source reads meta.available_domains via API key."""
         monkeypatch.setenv("DUSTMAIL_API_KEY", "dm_live_test")
