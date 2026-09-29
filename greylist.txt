@@ -53,3 +53,7 @@ privaterelay.appleid.com
 # leaked into upstream lists - keep policy-consistent (strict tier only)
 relay.firefox.com
 addy.io
+
+# alias.email / bump.email https://github.com/disposable/disposable/issues/264
+bumpmail.io
+bump.email
