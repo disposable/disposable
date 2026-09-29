@@ -443,6 +443,20 @@ class TestCustomSources:
         mock_post.return_value = type("R", (), {"json": lambda s: {"error": "FORBIDDEN_DOMAIN"}})()
         assert gen._processTempmailPro() is None
 
+    @patch("disposablehosts.generator.fetch_MX")
+    def test_process_testinator_email(self, mock_mx):
+        """TestinatorEmail emits the base domain while wildcard MX is live."""
+        gen = disposableHostGenerator()
+        mock_mx.return_value = ("testinator.email", True)
+        assert gen._processTestinatorEmail() == ["testinator.email"]
+
+    @patch("disposablehosts.generator.fetch_MX")
+    def test_process_testinator_email_dead(self, mock_mx):
+        """TestinatorEmail returns None once the wildcard MX is gone."""
+        gen = disposableHostGenerator()
+        mock_mx.return_value = ("testinator.email", False)
+        assert gen._processTestinatorEmail() is None
+
     @patch("disposablehosts.generator.httpx.get")
     @patch("disposablehosts.generator.remoteData.fetch_http")
     def test_process_fakemail_generator(self, mock_fetch, mock_get):

@@ -3,6 +3,7 @@
 import functools
 import ipaddress
 import logging
+import secrets
 from typing import Any, List, Optional, Tuple, Union
 
 import dns.exception
@@ -144,12 +145,17 @@ def fetch_MX(
             mx_list, is_invalid = _process_mx_resolution(domain, resolve, cache_key)
             if is_invalid:
                 return (domain, False)
-            if mx_list is not None:
-                if mx_list:
-                    rq.extend((x, dns.rdatatype.A, "A") for x in mx_list)
-                else:
-                    rq.append((domain, dns.rdatatype.A, "A"))
-                continue
+            if mx_list:
+                rq.extend((x, dns.rdatatype.A, "A") for x in mx_list)
+            elif mx_list is not None:
+                rq.append((domain, dns.rdatatype.A, "A"))
+            # MX yielded no records - some providers wildcard MX
+            # (*.example.com) that the apex never matches. Probe a random
+            # subdomain once; the guard stops the probe from recursing.
+            if not mx_list and not resolve[0].startswith("wc-"):
+                probe = f"wc-{secrets.token_hex(4)}.{resolve[0]}"
+                rq.append((probe, dns.rdatatype.MX, "MX"))
+            continue
 
         # Handle A/AAAA records
         r = resolve_DNS_cached(resolve[0], resolve[1], cache_key)

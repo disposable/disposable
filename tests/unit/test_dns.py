@@ -73,6 +73,32 @@ class TestFetchMX:
         result = fetch_MX("example.com")
         assert result == ("example.com", False)
 
+    @patch("disposablehosts.utils.dns.resolve_DNS_cached")
+    def test_fetch_mx_wildcard_subdomain(self, mock_resolve):
+        """Wildcard MX on subdomains validates a domain with empty apex."""
+        mock_mx = MagicMock()
+        mock_rr = MagicMock()
+        mock_rr.exchange.to_text.return_value = "mail.testinator.email"
+        mock_mx.rrset = [mock_rr]
+        mock_a = MagicMock()
+        mock_a.__iter__ = lambda self: iter([MagicMock(address="139.144.239.131")])
+
+        def resolve(host, rdtype, key):
+            if host.startswith("wc-") and rdtype == dns.rdatatype.MX:
+                return mock_mx
+            if rdtype == dns.rdatatype.A:
+                return mock_a
+            return "no answer section"
+
+        mock_resolve.side_effect = resolve
+        assert fetch_MX("testinator.email") == ("testinator.email", True)
+
+    @patch("disposablehosts.utils.dns.resolve_DNS_cached")
+    def test_fetch_mx_no_wildcard(self, mock_resolve):
+        """A domain without wildcard MX still fails verification."""
+        mock_resolve.return_value = "no answer section"
+        assert fetch_MX("collegevs.edu.pl") == ("collegevs.edu.pl", False)
+
 
 class TestProcessMXResolution:
     """Tests for _process_mx_resolution function."""

@@ -79,6 +79,7 @@ class disposableHostGenerator:
         {"type": "custom", "src": "YYDSMail", "retain": True},
         {"type": "custom", "src": "TenMinutesEmail", "scrape": True, "retain": True},
         {"type": "custom", "src": "TempmailPro", "retain": True},
+        {"type": "custom", "src": "TestinatorEmail", "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -636,6 +637,21 @@ class disposableHostGenerator:
         except Exception as e:
             logging.debug("tempmailpro.io probe for %s failed: %s", domain, e)
             return False
+
+    def _processTestinatorEmail(self) -> Optional[List[str]]:
+        """Verify the testinator.email wildcard-mail service is live.
+
+        Every subdomain (teamNNNNNN.testinator.email) accepts mail via a
+        wildcard MX while the apex has no MX/A of its own - so the domain
+        is emitted only while fetch_MX's wildcard probe confirms ingress.
+
+        Returns:
+            The base domain when reachable, or None when the service is gone.
+        """
+        if fetch_MX("testinator.email")[1]:
+            return ["testinator.email"]
+        logging.warning("testinator.email wildcard MX no longer resolves")
+        return None
 
     def _fakemail_generator_domains(self, base_url: str) -> Optional[List[str]]:
         """Fetch the mailbox domain pool of a Fake Mail Generator network site.
