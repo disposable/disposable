@@ -86,6 +86,8 @@ class disposableHostGenerator:
         {"type": "custom", "src": "Boomlify", "retain": True},
         {"type": "custom", "src": "FiveMinMail", "scrape": True, "retain": True},
         {"type": "custom", "src": "Mailper", "retain": True},
+        {"type": "custom", "src": "KukuLu", "retain": True},
+        {"type": "custom", "src": "OnetimeMail", "scrape": True, "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -753,6 +755,62 @@ class disposableHostGenerator:
             return ["tempfwd.com"]
         logging.warning("tempfwd.com MX no longer resolves")
         return None
+
+    def _processKukuLu(self) -> Optional[List[str]]:
+        """Fetch the rotating domain pool of kuku.lu.
+
+        The mobile UI (m.kuku.lu/ja.php) renders the address-creation
+        form with the full current pool as @domain entries in the HTML
+        (adadad.uk, instaddr.ch, via.tokyo.jp, ...). The pool rotates,
+        so the source is retained to keep rotated-out members covered.
+
+        Returns:
+            List of pool domains, or None on failure.
+        """
+        try:
+            html = remoteData.fetch_http(
+                "https://m.kuku.lu/ja.php",
+                headers={"User-Agent": "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X)"},
+                timeout=15,
+            )
+            if not html:
+                return None
+            domains = sorted({d.lower() for d in re.findall(r"@([a-z0-9.-]+\.[a-z]{2,})", html.decode("utf-8", "replace"))})
+            if domains:
+                return domains
+            logging.warning("kuku.lu page returned no domains")
+            return None
+        except Exception as e:
+            logging.warning("Failed to fetch kuku.lu domains: %s", e)
+            return None
+
+    def _processOnetimeMail(self) -> Optional[List[str]]:
+        """Sample the rotating domain of onetime-mail.com.
+
+        GET /?q=make2 mints a fresh one-week address on whatever domain
+        the service currently rotates to (e.g. 1t-mail.com). Called
+        repeatedly via the scrape loop; retain accumulates the pool.
+
+        Returns:
+            Single-element list with the sampled domain, or None on failure.
+        """
+        try:
+            html = remoteData.fetch_http(
+                "https://www.onetime-mail.com/?q=make2",
+                headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0"},
+                timeout=15,
+            )
+            if not html:
+                return None
+            match = re.search(r"[\w.+-]+@([\w.-]+\.[a-z]{2,})", html.decode("utf-8", "replace"))
+            domain = match.group(1).lower() if match else ""
+            if domain:
+                return [domain]
+            logging.warning("onetime-mail.com returned no address")
+            return None
+        except Exception as e:
+            logging.warning("Failed to fetch onetime-mail.com domain: %s", e)
+            return None
 
     def _processBoomlify(self) -> Optional[List[str]]:
         """Fetch the public domain pool of boomlify.com.

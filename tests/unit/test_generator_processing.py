@@ -599,6 +599,34 @@ class TestCustomSources:
         mock_mx.return_value = ("tempfwd.com", False)
         assert gen._processTempFwd() is None
 
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_kukulu(self, mock_fetch):
+        """KukuLu extracts the @domain pool from the mobile page."""
+        gen = disposableHostGenerator()
+        mock_fetch.return_value = b'<option>@adadad.uk</option><option>@instaddr.ch</option><option>@adadad.uk</option>'
+        assert gen._processKukuLu() == ["adadad.uk", "instaddr.ch"]
+
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_kukulu_failure(self, mock_fetch):
+        """KukuLu returns None on fetch failure or empty page."""
+        gen = disposableHostGenerator()
+        mock_fetch.return_value = b""
+        assert gen._processKukuLu() is None
+
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_onetime_mail(self, mock_fetch):
+        """OnetimeMail extracts the domain of the minted address."""
+        gen = disposableHostGenerator()
+        mock_fetch.return_value = b"Your address: gdpbjr@1T-Mail.com"
+        assert gen._processOnetimeMail() == ["1t-mail.com"]
+
+    @patch("disposablehosts.generator.remoteData.fetch_http")
+    def test_process_onetime_mail_failure(self, mock_fetch):
+        """OnetimeMail returns None on fetch failure or missing address."""
+        gen = disposableHostGenerator()
+        mock_fetch.return_value = b"no address here"
+        assert gen._processOnetimeMail() is None
+
     @patch("disposablehosts.generator.httpx.get")
     def test_process_boomlify(self, mock_get):
         """Boomlify source reads active domains from the public pool API."""
