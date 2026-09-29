@@ -95,7 +95,6 @@ Additionally, a run aborts without writing output if more than `--max-delta-rati
 |https://github.com/7c/fakefilter/|![GitHub last commit](https://img.shields.io/github/last-commit/7c/fakefilter)|
 |https://github.com/GeroldSetz/Mailinator-Domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/Mailinator-Domains)|
 |https://github.com/GeroldSetz/emailondeck.com-domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/emailondeck.com-domains)|
-|https://www.rotvpn.com/en/disposable-email||
 
 ## Credits
 

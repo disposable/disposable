@@ -95,15 +95,6 @@ class disposableHostGenerator:
         # correotemporal.org - redirects to tempmail.ninja (HTTP 301)
         # {"type": "html", "src": "https://correotemporal.org", "regex": DOMAIN_SEARCH_RE},
         {"type": "file", "src": "blacklist.txt", "ignore_not_exists": True},
-        {
-            "type": "html",
-            "src": "https://www.rotvpn.com/en/disposable-email",
-            "regex": [
-                re.compile(r"""<div class=\"container text-center\">\s+<div[^>]+>(.+?)</div>\s+</div>""", re.I | re.DOTALL),
-                DOMAIN_SEARCH_RE,
-            ],
-            "retain": True,
-        },
         {"type": "custom", "src": "Emailfake", "scrape": True, "retain": True},
         {"type": "custom", "src": "EmailFake", "scrape": True, "retain": True},
         {"type": "custom", "src": "Tempm", "scrape": True, "retain": True},
