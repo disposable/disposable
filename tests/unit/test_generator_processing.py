@@ -499,6 +499,35 @@ class TestCustomSources:
         assert gen._processTestinatorEmail() is None
 
     @patch("disposablehosts.generator.httpx.get")
+    def test_process_boomlify(self, mock_get):
+        """Boomlify source reads active domains from the public pool API."""
+        gen = disposableHostGenerator()
+        mock_get.return_value = type(
+            "R",
+            (),
+            {
+                "json": lambda s: [
+                    {"domain": "Kuromee.com", "is_active": 1},
+                    {"domain": "zikzak.site", "is_active": 1},
+                    {"domain": "rotated.example", "is_active": 0},
+                    {"domain": 42, "is_active": 1},
+                    {"is_active": 1},
+                ]
+            },
+        )()
+        assert gen._processBoomlify() == ["kuromee.com", "zikzak.site"]
+
+    @patch("disposablehosts.generator.httpx.get")
+    def test_process_boomlify_failure(self, mock_get):
+        """Boomlify source returns None on request failure or bad payload."""
+        gen = disposableHostGenerator()
+        mock_get.side_effect = Exception("boom")
+        assert gen._processBoomlify() is None
+        mock_get.side_effect = None
+        mock_get.return_value = type("R", (), {"json": lambda s: {"error": "x"}})()
+        assert gen._processBoomlify() is None
+
+    @patch("disposablehosts.generator.httpx.get")
     @patch("disposablehosts.generator.remoteData.fetch_http")
     def test_process_fakemail_generator(self, mock_fetch, mock_get):
         """Fake Mail Generator sites read the pool from /api/domains.php."""

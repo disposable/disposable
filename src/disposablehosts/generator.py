@@ -82,6 +82,7 @@ class disposableHostGenerator:
         {"type": "custom", "src": "TestinatorEmail", "retain": True},
         {"type": "custom", "src": "Emailnator", "scrape": True, "retain": True},
         {"type": "custom", "src": "TmpAl", "retain": True},
+        {"type": "custom", "src": "Boomlify", "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -713,6 +714,34 @@ class disposableHostGenerator:
             return ["testinator.email"]
         logging.warning("testinator.email wildcard MX no longer resolves")
         return None
+
+    def _processBoomlify(self) -> Optional[List[str]]:
+        """Fetch the public domain pool of boomlify.com.
+
+        The temp-mail service exposes its free pool unauthenticated via
+        GET https://v1.boomlify.com/domains/public - a JSON array of
+        objects carrying ``domain`` plus is_active/is_edu/expires_at
+        metadata. Pool members rotate (kuromee.com, zikzak.site,
+        nondon.store, fake-yahoo punycode domains), so the source is
+        retained to keep rotated-out members covered.
+
+        Returns:
+            List of active pool domains, or None on failure.
+        """
+        try:
+            res = httpx.get(
+                "https://v1.boomlify.com/domains/public",
+                headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0"},
+                timeout=15,
+            ).json()
+            if not isinstance(res, list):
+                logging.warning("boomlify.com /domains/public returned %s", type(res).__name__)
+                return None
+            domains = {str(e["domain"]).lower() for e in res if isinstance(e, dict) and e.get("is_active") and isinstance(e.get("domain"), str)}
+            return sorted(domains) or None
+        except Exception as e:
+            logging.warning("Failed to fetch boomlify.com domains: %s", e)
+            return None
 
     def _fakemail_generator_domains(self, base_url: str) -> Optional[List[str]]:
         """Fetch the mailbox domain pool of a Fake Mail Generator network site.
