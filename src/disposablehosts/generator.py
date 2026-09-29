@@ -80,6 +80,7 @@ class disposableHostGenerator:
         {"type": "custom", "src": "TenMinutesEmail", "scrape": True, "retain": True},
         {"type": "custom", "src": "TempmailPro", "retain": True},
         {"type": "custom", "src": "TestinatorEmail", "retain": True},
+        {"type": "custom", "src": "Emailnator", "scrape": True, "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -637,6 +638,38 @@ class disposableHostGenerator:
         except Exception as e:
             logging.debug("tempmailpro.io probe for %s failed: %s", domain, e)
             return False
+
+    def _processEmailnator(self) -> Optional[List[str]]:
+        """Sample the lookalike-domain pool of emailnator.com (Gmailnator).
+
+        ids=1 selects the "Domain" generator mode, which draws from a
+        rotating pool of provider-owned domains (mydefipet.live, psnator.com,
+        smartnator.com, tmpmailtor.com, ...). ids 2/3/8 mint real gmail.com /
+        googlemail.com addresses that no domain list can cover, so only the
+        domain pool is collected. Called repeatedly via the scrape loop.
+
+        Returns:
+            Single-element list with the sampled domain, or None on failure.
+        """
+        try:
+            res = httpx.post(
+                "https://www.emailnator.com/api/generate-email",
+                headers={
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0",
+                    "Content-Type": "application/json",
+                    "Referer": "https://www.emailnator.com/",
+                },
+                json={"ids": [1]},
+                timeout=15,
+            ).json()
+            domain = str(res.get("email") or "").rpartition("@")[2].lower()
+            if not domain:
+                logging.warning("emailnator.com response has no email: %s", res)
+                return None
+            return [domain]
+        except Exception as e:
+            logging.warning("Failed to fetch emailnator.com domain: %s", e)
+            return None
 
     def _processTestinatorEmail(self) -> Optional[List[str]]:
         """Verify the testinator.email wildcard-mail service is live.

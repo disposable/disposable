@@ -420,6 +420,27 @@ class TestCustomSources:
         assert gen._processTenMinutesEmail() is None
 
     @patch("disposablehosts.generator.httpx.post")
+    def test_process_emailnator(self, mock_post):
+        """Emailnator source extracts the domain from the generated inbox."""
+        gen = disposableHostGenerator()
+        mock_post.return_value = type("R", (), {"json": lambda s: {"email": "abc@psnator.com", "status": "success"}})()
+        assert gen._processEmailnator() == ["psnator.com"]
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_emailnator_failure(self, mock_post):
+        """Emailnator source returns None on request failure."""
+        gen = disposableHostGenerator()
+        mock_post.side_effect = Exception("boom")
+        assert gen._processEmailnator() is None
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_emailnator_error_response(self, mock_post):
+        """Emailnator source returns None when the API reports an error."""
+        gen = disposableHostGenerator()
+        mock_post.return_value = type("R", (), {"json": lambda s: {"status": "error", "message": "Too many requests"}})()
+        assert gen._processEmailnator() is None
+
+    @patch("disposablehosts.generator.httpx.post")
     @patch("disposablehosts.generator.remoteData.fetch_http")
     def test_process_tempmailpro(self, mock_fetch, mock_post):
         """TempmailPro scans the bundle for domains and verifies via activate-session."""
