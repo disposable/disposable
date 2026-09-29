@@ -628,6 +628,20 @@ class TestCustomSources:
         assert gen._processOnetimeMail() is None
 
     @patch("disposablehosts.generator.httpx.get")
+    def test_process_fifteen_qm(self, mock_get):
+        """FifteenQM extracts the domain of the minted address."""
+        gen = disposableHostGenerator()
+        mock_get.return_value = type("R", (), {"text": "addr: m4192680488@dea-21olympic.com"})()
+        assert gen._processFifteenQM() == ["dea-21olympic.com"]
+
+    @patch("disposablehosts.generator.httpx.get")
+    def test_process_fifteen_qm_failure(self, mock_get):
+        """FifteenQM returns None on failure or missing address."""
+        gen = disposableHostGenerator()
+        mock_get.side_effect = Exception("boom")
+        assert gen._processFifteenQM() is None
+
+    @patch("disposablehosts.generator.httpx.get")
     def test_process_boomlify(self, mock_get):
         """Boomlify source reads active domains from the public pool API."""
         gen = disposableHostGenerator()

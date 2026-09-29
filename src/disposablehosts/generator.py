@@ -88,6 +88,7 @@ class disposableHostGenerator:
         {"type": "custom", "src": "Mailper", "retain": True},
         {"type": "custom", "src": "KukuLu", "retain": True},
         {"type": "custom", "src": "OnetimeMail", "scrape": True, "retain": True},
+        {"type": "custom", "src": "FifteenQM", "scrape": True, "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -810,6 +811,35 @@ class disposableHostGenerator:
             return None
         except Exception as e:
             logging.warning("Failed to fetch onetime-mail.com domain: %s", e)
+            return None
+
+    def _processFifteenQM(self) -> Optional[List[str]]:
+        """Sample the rotating domain of 15qm.com.
+
+        GET /sp/?act=sevin mints a fresh 15-minute address and 302s to
+        the recv inbox carrying it (PHP session via redirect cookie
+        jar). The pool uses dea-* domains (dea-21olympic.com,
+        dea-love.net, idea-mail.*). Called repeatedly via the scrape
+        loop; retain accumulates the pool.
+
+        Returns:
+            Single-element list with the sampled domain, or None on failure.
+        """
+        try:
+            res = httpx.get(
+                "http://15qm.com/sp/?act=sevin",
+                headers={"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0"},
+                follow_redirects=True,
+                timeout=15,
+            )
+            match = re.search(r"[\w.+-]+@([\w.-]+\.[a-z]{2,})", res.text)
+            domain = match.group(1).lower() if match else ""
+            if domain:
+                return [domain]
+            logging.warning("15qm.com returned no address")
+            return None
+        except Exception as e:
+            logging.warning("Failed to fetch 15qm.com domain: %s", e)
             return None
 
     def _processBoomlify(self) -> Optional[List[str]]:
