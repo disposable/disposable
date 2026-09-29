@@ -225,9 +225,7 @@ def pytest_generate_tests(metafunc):
     if "source" in metafunc.fixturenames:
         sources = get_test_sources()
         # Filter out file sources that don't need network testing
-        test_sources = [
-            s for s in sources if s.get("type") not in ("file", "whitelist", "whitelist_file", "whitelist_mailservices")
-        ]
+        test_sources = [s for s in sources if s.get("type") not in ("file", "whitelist", "whitelist_file", "whitelist_mailservices")]
         # Create test IDs from source URLs
         test_ids = []
         for s in test_sources:

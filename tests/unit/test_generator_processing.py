@@ -603,7 +603,7 @@ class TestCustomSources:
     def test_process_kukulu(self, mock_fetch):
         """KukuLu extracts the @domain pool from the mobile page."""
         gen = disposableHostGenerator()
-        mock_fetch.return_value = b'<option>@adadad.uk</option><option>@instaddr.ch</option><option>@adadad.uk</option>'
+        mock_fetch.return_value = b"<option>@adadad.uk</option><option>@instaddr.ch</option><option>@adadad.uk</option>"
         assert gen._processKukuLu() == ["adadad.uk", "instaddr.ch"]
 
     @patch("disposablehosts.generator.remoteData.fetch_http")
