@@ -37,7 +37,7 @@ class TestSourceRetains:
         flagged = {s["src"] for s in disposableHostGenerator().sources if s.get("retain")}
         unflagged = {s["src"] for s in disposableHostGenerator().sources if not s.get("retain")}
         assert flagged  # sanity: at least some sources retain
-        compilation_types = ("list", "sha1", "file", "whitelist", "whitelist_file", "greylist", "greylist_file")
+        compilation_types = ("list", "sha1", "file", "whitelist", "whitelist_file", "whitelist_mailservices", "greylist", "greylist_file")
         assert all(s.get("type") in compilation_types for s in disposableHostGenerator().sources if s["src"] in unflagged)
 
 

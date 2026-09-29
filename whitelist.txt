@@ -1,31 +1,9 @@
 # https://github.com/disposable/disposable/issues/32
-qq.com
 sibmail.com
-163.com
-126.com
-188.com
-yeah.net
-naver.com
-freemail.hu
-sina.com
-sohu.com
-poczta.onet.pl
-tom.com
-21cn.com
-writeme.com
-dr.com
-mindless.com
-i.ua
 com.ar
 
 # https://github.com/disposable/disposable/issues/41
 brainonfire.net
-
-# IANA Test Domains
-example.com
-example.net
-example.org
-hey.com
 
 # https://github.com/disposable/disposable-email-domains/pull/32
 xwaretech.com
@@ -34,99 +12,7 @@ xwaretech.net
 xwaretech.tk
 
 # more freemailer
-aim.com
-aol.com
-bk.ru
-blu.it
-btinternet.com
-caramail.com
-exclusivemail.co.za
-free.fr
-freemail.hu
-gmail.com
-gmx.at
-gmx.de
-gmx.net
-googlemail.com
-hanmail.net
-homemail.co.za
-hotmail.co.uk
-hotmail.com
-hotmail.de
-hotmail.fr
-hotmail.it
-inbox.ru
-iol.it
-libero.it
-list.ru
-lycos.at
-lycos.co.uk
-lycos.de
-lycos.es
-lycos.it
-lycos.nl
-magicmail.co.za
-mail.com
-mail.ru
-mailbox.co.za
 msn.co.uk
-msn.com
-netscape.com
-netscape.net
-o2.pl
-ravemail.co.za
-rediffmail.com
-starmail.co.za
-thecricket.co.za
-thegolf.co.za
-thepub.co.za
-therugby.co.za
-yahoo.ca
-yahoo.co.in
-yahoo.co.jp
-yahoo.co.uk
-yahoo.com
-yahoo.com.ar
-yahoo.com.au
-yahoo.com.br
-yahoo.com.hk
-yahoo.com.mx
-yahoo.com.ph
-yahoo.com.sg
-yahoo.com.tw
-yahoo.com.vn
-yahoo.de
-yahoo.dk
-yahoo.es
-yahoo.fr
-yahoo.gr
-yahoo.ie
-yahoo.it
-yahoo.se
-yandex.ru
-web.de
-webmail.co.za
-websurfer.co.za
-workmail.co.za
-tutamail.com
-tutanota.com
-tutanota.de
-tuta.io
-keemail.me
-skiff.com
-protonmail.ch
-protonmail.com
-proton.me
-pm.me
-
-# https://github.com/disposable/disposable/pull/124
-xmail.ru
-riseup.net
-airmail.cc
-firemail.cc
-
-# https://github.com/disposable/disposable/issues/106
-myyahoo.com
 
 # https://github.com/disposable/disposable/issues/89
 asics.com
@@ -148,18 +34,11 @@ swatch.com
 ubicloud.com
 
 # yahoo local domains - https://github.com/flotwig/disposable-email-addresses/pull/3
-yahoo.com.ph
-yahoo.com.vn
-test.de
 home.de
 mail.htl22.at
-ukr.net
 
 # Personal domain - https://github.com/ivolo/disposable-email-domains/pull/938
 ruffrey.com
-
-# onet.pl domain - https://github.com/disposable/disposable/issues/117
-amorki.pl
 
 # benilde.edu.ph - https://github.com/disposable/disposable/issues/128
 benilde.edu.ph
@@ -200,200 +79,8 @@ file-up.fr
 # https://github.com/disposable/disposable/issues/193
 gide.com
 
-# https://github.com/disposable/disposable/issues/196
-vfemail.net
-
 # https://github.com/disposable/disposable/issues/192
 buildingradar.com
-
-# aliases of mail.com https://github.com/disposable/disposable/pull/202
-2trom.com
-accountant.com
-acdcfan.com
-activist.com
-adexec.com
-africamail.com
-aircraftmail.com
-allergist.com
-alumni.com
-alumnidirector.com
-angelic.com
-archaeologist.com
-arcticmail.com
-artlover.com
-asia-mail.com
-asia.com
-atheist.com
-auctioneer.net
-australiamail.com
-bartender.net
-bellair.net
-berlin.com
-bikerider.com
-birdlover.com
-blader.com
-boardermail.com
-brazilmail.com
-brew-master.com
-brew-meister.com
-bsdmail.com
-californiamail.com
-cash4u.com
-catlover.com
-chef.net
-chemist.com
-chinamail.com
-clubmember.org
-collector.org
-columnist.com
-comic.com
-computer4u.com
-consultant.com
-contractor.net
-coolsite.net
-counsellor.com
-cutey.com
-cyber-wizard.com
-cyberdude.com
-cybergal.com
-cyberservices.com
-dallasmail.com
-dbzmail.com
-deliveryman.com
-diplomats.com
-disciples.com
-discofan.com
-disposable.com
-doglover.com
-doramail.com
-dr.com
-dublin.com
-dutchmail.com
-elvisfan.com
-email.com
-engineer.com
-englandmail.com
-europe.com
-europemail.com
-execs.com
-fastservice.com
-financier.com
-fireman.net
-galaxyhit.com
-gardener.com
-geologist.com
-germanymail.com
-graduate.org
-graphic-designer.com
-greenmail.net
-groupmail.com
-hackermail.com
-hairdresser.net
-hilarious.com
-hiphopfan.com
-homemail.com
-hot-shot.com
-housemail.com
-humanoid.net
-iname.com
-innocent.com
-inorbit.com
-instruction.com
-instructor.net
-insurer.com
-irelandmail.com
-israelmail.com
-italymail.com
-job4u.com
-journalist.com
-keromail.com
-kissfans.com
-kittymail.com
-koreamail.com
-legislator.com
-linuxmail.org
-lobbyist.com
-lovecat.com
-madonnafan.com
-mail-me.com
-marchmail.com
-metalfan.com
-mexicomail.com
-minister.com
-moscowmail.com
-munich.com
-musician.org
-muslim.com
-myself.com
-net-shopping.com
-ninfan.com
-nonpartisan.com
-null.net
-nycmail.com
-optician.com
-orthodontist.net
-pacific-ocean.com
-pacificwest.com
-pediatrician.com
-petlover.com
-photographer.net
-physicist.net
-planetmail.com
-planetmail.net
-polandmail.com
-politician.com
-post.com
-presidency.com
-priest.com
-programmer.net
-protestant.com
-publicist.com
-qualityservice.com
-radiologist.net
-ravemail.com
-realtyagent.com
-reborn.com
-reggaefan.com
-registerednurses.com
-reincarnate.com
-religious.com
-repairman.com
-representative.com
-rescueteam.com
-rocketship.com
-safrica.com
-saintly.com
-salesperson.net
-samerica.com
-sanfranmail.com
-scotlandmail.com
-secretary.net
-snakebite.com
-socialworker.net
-sociologist.com
-solution4u.com
-songwriter.net
-spainmail.com
-surgical.net
-swedenmail.com
-swissmail.com
-teachers.org
-tech-center.com
-techie.com
-technologist.com
-theplate.com
-therapist.net
-toke.com
-toothfairy.com
-torontomail.com
-tvstar.com
-umpire.com
-usa.com
-uymail.com
-webname.com
-worker.com
-workmail.com
-writeme.com
 
 # feedspot - https://github.com/disposable/disposable/issues/201
 feedspot.com
@@ -402,20 +89,11 @@ feedspotmailer.com
 # shitware - https://github.com/disposable/disposable/issues/216
 shitware.nl
 
-# infomaniak - https://github.com/disposable/disposable/issues/222
-ikmail.com
-ik.me
-etik.com 
-
 # wizard - https://github.com/disposable/disposable/pull/231
 wizard.com
 
 # private domain - https://github.com/disposable/disposable/issues/235
 centraldecomunicacion.es
-
-# https://github.com/disposable/disposable/pull/243
-139.com
-189.cn
 
 # Forward Email - legitimate open-source email service, not disposable
 # https://forwardemail.net - IMAP/SMTP/CalDAV email hosting for custom domains

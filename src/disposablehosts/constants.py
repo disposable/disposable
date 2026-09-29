@@ -14,6 +14,7 @@ SHA1_RE = re.compile(r"^[a-fA-F0-9]{40}")
 # Default source URLs
 DISPOSABLE_WHITELIST_URL = "https://raw.githubusercontent.com/disposable/disposable/master/whitelist.txt"
 DISPOSABLE_GREYLIST_URL = "https://raw.githubusercontent.com/disposable/disposable/master/greylist.txt"
+MAILSERVICES_URL = "https://raw.githubusercontent.com/disposable/static-disposable-lists/master/mailservices.json"
 
 
 def generate_random_string(length: int) -> str:

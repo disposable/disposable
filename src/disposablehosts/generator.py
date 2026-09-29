@@ -19,6 +19,7 @@ from .constants import (
     DISPOSABLE_WHITELIST_URL,
     DOMAIN_RE,
     DOMAIN_SEARCH_RE,
+    MAILSERVICES_URL,
     generate_random_string,
 )
 from .history import DomainHistory
@@ -211,6 +212,7 @@ class disposableHostGenerator:
         self.sha1: Set[str] = set()
         self.skip: Set[str] = set()
         self.grey: Set[str] = set()
+        self.maintained_whitelist: Set[str] = set()
         self.source_map: Dict[str, Union[Set[str], List[str]]] = {}
         self.domain_seen: Dict[str, Set[str]] = {}
 
@@ -234,6 +236,7 @@ class disposableHostGenerator:
         # Load remote URL if no custom list is defined
         if self.options.get("whitelist") is None:
             self.sources.insert(0, {"type": "whitelist", "src": DISPOSABLE_WHITELIST_URL})
+            self.sources.insert(0, {"type": "whitelist_mailservices", "src": MAILSERVICES_URL})
             self.options["whitelist"] = "whitelist.txt"
         else:
             self.sources.insert(
@@ -329,6 +332,11 @@ class disposableHostGenerator:
 
             return preprocess_json(data, source.get("encoding", "utf-8"))
 
+        if fmt == "whitelist_mailservices":
+            from .preprocessing.mailservices import preprocess_mailservices
+
+            return preprocess_mailservices(data, source.get("encoding", "utf-8"))
+
         # Handle file-based types (list, file, whitelist, greylist, etc.)
         if fmt in ("whitelist", "list", "file", "whitelist_file", "greylist", "greylist_file"):
             from .preprocessing.file import preprocess_file
@@ -353,6 +361,11 @@ class disposableHostGenerator:
 
         if source["type"] in ("whitelist", "whitelist_file", "sha1"):
             self.skip.update(lines_filtered)
+            return True
+
+        if source["type"] == "whitelist_mailservices":
+            self.skip.update(lines_filtered)
+            self.maintained_whitelist.update(lines_filtered)
             return True
 
         if source["type"] in ("greylist", "greylist_file"):
@@ -1280,7 +1293,7 @@ class disposableHostGenerator:
             self.domains.discard(domain)
             self.sha1.discard(hashlib.sha1(domain.encode("idna")).hexdigest())  # nosec B324
 
-            if self.options.get("dns_verify") and domain not in ("example.com", "example.org", "example.net"):
+            if self.options.get("dns_verify") and domain not in ("example.com", "example.org", "example.net") and domain not in self.maintained_whitelist:
                 r = fetch_MX(domain, nameservers, dnsport, dns_timeout)
                 if not r or not r[1]:
                     logging.warning("Skipped domain %s does not resolve!", domain)

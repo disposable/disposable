@@ -58,6 +58,39 @@ class TestPreprocessData:
             result = gen._preprocess_data(source, data)
             assert result == ["example.com", "test.org"], f"Failed for format: {fmt}"
 
+    def test_preprocess_mailservices(self):
+        """mailservices preprocessing yields hosts of whitelist-eligible types."""
+        gen = disposableHostGenerator()
+        source = {"type": "whitelist_mailservices"}
+        data = b"""{
+            "a": {"type": "free", "hosts": ["FreeMail.com", "b.org"]},
+            "b": {"type": "paid", "hosts": ["paidmail.com"]},
+            "c": {"type": "forwarding", "hosts": ["alias.io"]},
+            "d": {"type": "reserved", "hosts": ["example.edu"]},
+            "e": {"hosts": ["notype.com"]}
+        }"""
+        assert gen._preprocess_data(source, data) == [
+            "b.org",
+            "example.edu",
+            "freemail.com",
+            "paidmail.com",
+        ]
+
+    def test_preprocess_mailservices_invalid(self):
+        """mailservices preprocessing returns None on bad payloads."""
+        gen = disposableHostGenerator()
+        source = {"type": "whitelist_mailservices"}
+        assert gen._preprocess_data(source, b"not json") is None
+        assert gen._preprocess_data(source, b'{"a": {"type": "forwarding", "hosts": ["x.io"]}}') is None
+
+    def test_postprocess_mailservices_whitelists(self):
+        """mailservices source fills skip + maintained sets."""
+        gen = disposableHostGenerator()
+        source = {"type": "whitelist_mailservices", "src": "x"}
+        assert gen._postprocess_data(source, b"", ["gmail.com"]) is True
+        assert "gmail.com" in gen.skip
+        assert "gmail.com" in gen.maintained_whitelist
+
 
 class TestPreprocessDataExtended:
     """Extended tests for _preprocess_data with custom encoding."""
