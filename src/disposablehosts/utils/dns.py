@@ -147,7 +147,7 @@ def fetch_MX(
                 return (domain, False)
             if mx_list:
                 rq.extend((x, dns.rdatatype.A, "A") for x in mx_list)
-            elif mx_list is not None:
+            else:
                 rq.append((domain, dns.rdatatype.A, "A"))
             # MX yielded no records - some providers wildcard MX
             # (*.example.com) that the apex never matches. Probe a random

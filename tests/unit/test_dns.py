@@ -99,6 +99,20 @@ class TestFetchMX:
         mock_resolve.return_value = "no answer section"
         assert fetch_MX("collegevs.edu.pl") == ("collegevs.edu.pl", False)
 
+    @patch("disposablehosts.utils.dns.resolve_DNS_cached")
+    def test_fetch_mx_apex_a_fallback(self, mock_resolve):
+        """A domain without MX but with a public apex A record resolves (implicit MX)."""
+        mock_a = MagicMock()
+        mock_a.__iter__ = lambda self: iter([MagicMock(address="149.97.150.179")])
+
+        def resolve(host, rdtype, key):
+            if rdtype == dns.rdatatype.A and not host.startswith("wc-"):
+                return mock_a
+            return "no answer section"
+
+        mock_resolve.side_effect = resolve
+        assert fetch_MX("instruction.com") == ("instruction.com", True)
+
 
 class TestProcessMXResolution:
     """Tests for _process_mx_resolution function."""
