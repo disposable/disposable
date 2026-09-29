@@ -86,7 +86,6 @@ Additionally, a run aborts without writing output if more than `--max-delta-rati
 |Source|Status|
 |------|--:|
 |https://gist.github.com/adamloving/4401361/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F4401361&cacheSeconds=86400)|
-|https://gist.github.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F7e188c35fd5ca754c970e3a1caf045ef&cacheSeconds=86400)|
 |https://github.com/disposable/static-disposable-lists/|![GitHub last commit](https://img.shields.io/github/last-commit/disposable/static-disposable-lists)|
 |https://github.com/wesbos/burner-email-providers/|![GitHub last commit](https://img.shields.io/github/last-commit/wesbos/burner-email-providers)|
 |https://github.com/martenson/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/martenson/disposable-email-domains)|
@@ -94,9 +93,9 @@ Additionally, a run aborts without writing output if more than `--max-delta-rati
 |https://github.com/FGRibreau/mailchecker/|![GitHub last commit](https://img.shields.io/github/last-commit/FGRibreau/mailchecker)|
 |https://github.com/7c/fakefilter/|![GitHub last commit](https://img.shields.io/github/last-commit/7c/fakefilter)|
 <!-- Disabled: no longer updated |https://github.com/flotwig/disposable-email-addresses/|![GitHub last commit](https://img.shields.io/github/last-commit/flotwig/disposable-email-addresses)| -->
+|https://github.com/GeroldSetz/Mailinator-Domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/Mailinator-Domains)|
 |https://github.com/GeroldSetz/emailondeck.com-domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/emailondeck.com-domains)|
 |https://www.rotvpn.com/en/disposable-email||
-|https://www.stopforumspam.com/downloads/toxic_domains_whole.txt||
 
 ## Credits
 
