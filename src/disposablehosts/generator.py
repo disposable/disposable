@@ -81,6 +81,7 @@ class disposableHostGenerator:
         {"type": "custom", "src": "TempmailPro", "retain": True},
         {"type": "custom", "src": "TestinatorEmail", "retain": True},
         {"type": "custom", "src": "Emailnator", "scrape": True, "retain": True},
+        {"type": "custom", "src": "TmpAl", "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -669,6 +670,33 @@ class disposableHostGenerator:
             return [domain]
         except Exception as e:
             logging.warning("Failed to fetch emailnator.com domain: %s", e)
+            return None
+
+    def _processTmpAl(self) -> Optional[List[str]]:
+        """Fetch the domain pool of tmp.al (luxusmail.org successor).
+
+        The Android app's API issues anonymous JWTs: GET /api/auth yields an
+        access token, then GET /api/domains returns the current pool as a
+        JSON array. Pool domains run on the dedicated mail.tmp.al backend.
+
+        Returns:
+            List of current pool domains, or None on failure.
+        """
+        ua = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0"}
+        try:
+            token = httpx.get("https://tmp.al/api/auth", headers=ua, timeout=15).json().get("access_token")
+            if not token:
+                logging.warning("tmp.al /api/auth returned no token")
+                return None
+            res = httpx.get(
+                "https://tmp.al/api/domains",
+                headers={**ua, "Authorization": f"Bearer {token}"},
+                timeout=15,
+            ).json()
+            domains = [str(d).lower() for d in res if isinstance(d, str)] if isinstance(res, list) else []
+            return sorted(domains) or None
+        except Exception as e:
+            logging.warning("Failed to fetch tmp.al domains: %s", e)
             return None
 
     def _processTestinatorEmail(self) -> Optional[List[str]]:

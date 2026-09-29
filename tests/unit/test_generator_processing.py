@@ -464,6 +464,26 @@ class TestCustomSources:
         mock_post.return_value = type("R", (), {"json": lambda s: {"error": "FORBIDDEN_DOMAIN"}})()
         assert gen._processTempmailPro() is None
 
+    @patch("disposablehosts.generator.httpx.get")
+    def test_process_tmp_al(self, mock_get):
+        """TmpAl source authenticates anonymously and reads the domain pool."""
+        gen = disposableHostGenerator()
+
+        def get(url, **kwargs):
+            if url.endswith("/api/auth"):
+                return type("R", (), {"json": lambda s: {"access_token": "jwt"}})()
+            return type("R", (), {"json": lambda s: ["mailapril.com", "MailOctober.com"]})()
+
+        mock_get.side_effect = get
+        assert gen._processTmpAl() == ["mailapril.com", "mailoctober.com"]
+
+    @patch("disposablehosts.generator.httpx.get")
+    def test_process_tmp_al_failure(self, mock_get):
+        """TmpAl source returns None on request failure."""
+        gen = disposableHostGenerator()
+        mock_get.side_effect = Exception("boom")
+        assert gen._processTmpAl() is None
+
     @patch("disposablehosts.generator.fetch_MX")
     def test_process_testinator_email(self, mock_mx):
         """TestinatorEmail emits the base domain while wildcard MX is live."""
