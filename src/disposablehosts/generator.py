@@ -39,7 +39,6 @@ class disposableHostGenerator:
 
     sources: List[Dict[str, Any]] = [  # noqa: RUF012 - Mutable default is intentional, copied in __init__
         {"type": "list", "external": True, "src": "https://gist.githubusercontent.com/adamloving/4401361/raw/"},
-        {"type": "list", "external": True, "src": "https://gist.githubusercontent.com/jamesonev/7e188c35fd5ca754c970e3a1caf045ef/raw/"},
         {"type": "list", "external": False, "src": "https://raw.githubusercontent.com/disposable/static-disposable-lists/master/mail-data-hosts-net.txt"},
         {"type": "list", "external": True, "src": "https://raw.githubusercontent.com/wesbos/burner-email-providers/master/emails.txt"},
         {"type": "list", "external": False, "src": "https://raw.githubusercontent.com/disposable/static-disposable-lists/master/manual.txt"},
