@@ -366,6 +366,11 @@ class disposableHostGenerator:
         if source["type"] == "whitelist_mailservices":
             self.skip.update(lines_filtered)
             self.maintained_whitelist.update(lines_filtered)
+            from .preprocessing.mailservices import preprocess_mailservices_grey
+
+            for host in preprocess_mailservices_grey(data, source.get("encoding", "utf-8")) or []:
+                if self.check_valid_domains(host):
+                    self.grey.add(host)
             return True
 
         if source["type"] in ("greylist", "greylist_file"):

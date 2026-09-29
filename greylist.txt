@@ -1,59 +1,8 @@
 # E-mail services in this file do allow anonymous signup.
 # These domains are only listed in strict mode - see https://github.com/disposable/disposable/issues/81
-
-# simplelogin
-simplelogin.com
-silomails.com
-slmails.com
-simplelogin.fr
-aleeas.com
-slmail.me
-8shield.net
-dralias.com
-passinbox.com
-passfwd.com
-passmail.com
-passmail.net
-simplelogin.co
-simplelogin.io
-
-# DuckDuckGo
-duck.com
-
-# https://github.com/disposable/disposable/issues/97
-mozmail.com
-
-# addy.io
-anonaddy.com
-anonaddy.me
-
-# https://github.com/disposable/disposable/issues/208
-c2.hu
-
-# onet.pl https://github.com/disposable/disposable/issues/214
-op.pl
-onet.pl
-poczta.onet.pl
-vp.pl
-onet.eu
-autograf.pl
-buziaczek.pl
-spoko.pl
-poczta.onet.eu
-onet.com.pl
-amorki.pl
-opoczta.pl
-
-# Brave Email Aliases https://github.com/disposable/disposable/issues/288
-bravealias.com
-
-# Apple Hide My Email
-privaterelay.appleid.com
-
-# leaked into upstream lists - keep policy-consistent (strict tier only)
-relay.firefox.com
-addy.io
-
-# alias.email / bump.email https://github.com/disposable/disposable/issues/264
-bumpmail.io
-bump.email
+#
+# Provider-derived greylist entries are managed in mailservices.json
+# (https://github.com/disposable/static-disposable-lists):
+#   - type "forwarding" is always greylist-eligible
+#   - type "free"/"paid" with signup_verification "none" or "email" is greylist-eligible
+# This file is only for explicit overrides not yet covered by the catalog.

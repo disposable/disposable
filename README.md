@@ -29,8 +29,9 @@ curl https://raw.githubusercontent.com/disposable/disposable-email-domains/maste
 
 ### Strict Mode
 A [file](https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains_strict.txt)
-containing a sorted list of domains from [greylist.txt](https://github.com/disposable/disposable/blob/master/greylist.txt), one domain per line.
+containing a sorted list of greylist domains, one domain per line.
 The greylist contains e-mail services which do allow anonymous signup - domains from this list are only listed in strict mode.
+Greylist membership is derived from [mailservices.json](https://github.com/disposable/static-disposable-lists/blob/master/mailservices.json) (forwarding/alias services and providers with anonymous signup) plus explicit entries in [greylist.txt](https://github.com/disposable/disposable/blob/master/greylist.txt).
 For more informations, please check Issue  [#81](https://github.com/disposable/disposable/issues/81).
 
 ```shell

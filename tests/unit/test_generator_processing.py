@@ -59,15 +59,18 @@ class TestPreprocessData:
             assert result == ["example.com", "test.org"], f"Failed for format: {fmt}"
 
     def test_preprocess_mailservices(self):
-        """mailservices preprocessing yields hosts of whitelist-eligible types."""
+        """mailservices preprocessing yields only verified-signup whitelist hosts."""
         gen = disposableHostGenerator()
         source = {"type": "whitelist_mailservices"}
         data = b"""{
             "a": {"type": "free", "hosts": ["FreeMail.com", "b.org"]},
-            "b": {"type": "paid", "hosts": ["paidmail.com"]},
+            "b": {"type": "paid", "signup_verification": "mobile", "hosts": ["paidmail.com"]},
             "c": {"type": "forwarding", "hosts": ["alias.io"]},
             "d": {"type": "reserved", "hosts": ["example.edu"]},
-            "e": {"hosts": ["notype.com"]}
+            "e": {"hosts": ["notype.com"]},
+            "f": {"type": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
+            "g": {"type": "free", "signup_verification": ["email"], "hosts": ["mailcheck.com"]},
+            "h": {"type": "free", "signup_verification": ["mobile", "email"], "hosts": ["mixedmail.com"]}
         }"""
         assert gen._preprocess_data(source, data) == [
             "b.org",
@@ -75,6 +78,42 @@ class TestPreprocessData:
             "freemail.com",
             "paidmail.com",
         ]
+
+    def test_preprocess_mailservices_grey(self):
+        """mailservices grey extraction covers forwarding + anonymous-signup providers."""
+        from disposablehosts.preprocessing.mailservices import preprocess_mailservices_grey
+
+        data = b"""{
+            "a": {"type": "forwarding", "signup_verification": "payment", "hosts": ["alias.io"]},
+            "b": {"type": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
+            "c": {"type": "free", "signup_verification": ["email"], "hosts": ["mailcheck.com"]},
+            "d": {"type": "free", "signup_verification": ["mobile", "email"], "hosts": ["mixedmail.com"]},
+            "e": {"type": "free", "signup_verification": "mobile", "hosts": ["verified.com"]},
+            "f": {"type": "free", "hosts": ["unsetmail.com"]},
+            "g": {"type": "paid", "signup_verification": "email", "hosts": ["paidanon.com"]},
+            "h": {"type": "reserved", "hosts": ["example.edu"]}
+        }"""
+        assert preprocess_mailservices_grey(data) == [
+            "alias.io",
+            "anonmail.com",
+            "mailcheck.com",
+            "mixedmail.com",
+            "paidanon.com",
+        ]
+
+    def test_preprocess_mailservices_grey_beats_whitelist(self):
+        """A host listed as both grey-eligible and whitelist-eligible stays grey."""
+        from disposablehosts.preprocessing.mailservices import (
+            preprocess_mailservices,
+            preprocess_mailservices_grey,
+        )
+
+        data = b"""{
+            "a": {"type": "free", "signup_verification": "none", "hosts": ["shared.com"]},
+            "b": {"type": "free", "signup_verification": "mobile", "hosts": ["shared.com", "ok.com"]}
+        }"""
+        assert preprocess_mailservices(data) == ["ok.com"]
+        assert preprocess_mailservices_grey(data) == ["shared.com"]
 
     def test_preprocess_mailservices_invalid(self):
         """mailservices preprocessing returns None on bad payloads."""
@@ -90,6 +129,20 @@ class TestPreprocessData:
         assert gen._postprocess_data(source, b"", ["gmail.com"]) is True
         assert "gmail.com" in gen.skip
         assert "gmail.com" in gen.maintained_whitelist
+
+    def test_postprocess_mailservices_fills_grey(self):
+        """mailservices source also populates the grey tier from raw data."""
+        gen = disposableHostGenerator()
+        source = {"type": "whitelist_mailservices", "src": "x"}
+        data = b"""{
+            "a": {"type": "forwarding", "hosts": ["alias.io"]},
+            "b": {"type": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
+            "c": {"type": "free", "signup_verification": "mobile", "hosts": ["verified.com"]}
+        }"""
+        assert gen._postprocess_data(source, data, ["verified.com"]) is True
+        assert "verified.com" in gen.maintained_whitelist
+        assert "verified.com" not in gen.grey
+        assert gen.grey == {"alias.io", "anonmail.com"}
 
 
 class TestPreprocessDataExtended:
