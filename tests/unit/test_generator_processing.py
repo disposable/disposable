@@ -527,6 +527,44 @@ class TestCustomSources:
         mock_get.return_value = type("R", (), {"json": lambda s: {"error": "x"}})()
         assert gen._processBoomlify() is None
 
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_fiveminmail(self, mock_post):
+        """FiveMinMail source extracts the domain from a generated address."""
+        gen = disposableHostGenerator()
+        mock_post.return_value = type("R", (), {"json": lambda s: {"email": "u_abc@Zelnro.com"}})()
+        assert gen._processFiveMinMail() == ["zelnro.com"]
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_fiveminmail_failure(self, mock_post):
+        """FiveMinMail source returns None on failure or missing email."""
+        gen = disposableHostGenerator()
+        mock_post.side_effect = Exception("boom")
+        assert gen._processFiveMinMail() is None
+        mock_post.side_effect = None
+        mock_post.return_value = type("R", (), {"json": lambda s: {"detail": "rate limit"}})()
+        assert gen._processFiveMinMail() is None
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_mailper(self, mock_post):
+        """Mailper source reads domains from the GraphQL publicDomains query."""
+        gen = disposableHostGenerator()
+        mock_post.return_value = type(
+            "R",
+            (),
+            {"json": lambda s: {"data": {"publicDomains": [{"domain": "Mailper.com"}, {"domain": "foo.bar"}, {"nodomain": 1}]}}},
+        )()
+        assert gen._processMailper() == ["foo.bar", "mailper.com"]
+
+    @patch("disposablehosts.generator.httpx.post")
+    def test_process_mailper_failure(self, mock_post):
+        """Mailper source returns None on failure or empty pool."""
+        gen = disposableHostGenerator()
+        mock_post.side_effect = Exception("boom")
+        assert gen._processMailper() is None
+        mock_post.side_effect = None
+        mock_post.return_value = type("R", (), {"json": lambda s: {"data": {"publicDomains": []}}})()
+        assert gen._processMailper() is None
+
     @patch("disposablehosts.generator.httpx.get")
     @patch("disposablehosts.generator.remoteData.fetch_http")
     def test_process_fakemail_generator(self, mock_fetch, mock_get):

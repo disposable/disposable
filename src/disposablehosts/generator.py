@@ -83,6 +83,8 @@ class disposableHostGenerator:
         {"type": "custom", "src": "Emailnator", "scrape": True, "retain": True},
         {"type": "custom", "src": "TmpAl", "retain": True},
         {"type": "custom", "src": "Boomlify", "retain": True},
+        {"type": "custom", "src": "FiveMinMail", "scrape": True, "retain": True},
+        {"type": "custom", "src": "Mailper", "retain": True},
         {"type": "custom", "src": "AdGuardTempMail", "scrape": True, "retain": True},
         # tmailor.com - cloudflare challenge, API returns HTTP 403
         # {"type": "custom", "src": "Tmailor", "scrape": True},
@@ -741,6 +743,62 @@ class disposableHostGenerator:
             return sorted(domains) or None
         except Exception as e:
             logging.warning("Failed to fetch boomlify.com domains: %s", e)
+            return None
+
+    def _processFiveMinMail(self) -> Optional[List[str]]:
+        """Sample the address pool of 5minmail.com.
+
+        POST /generate mints an ephemeral address on the provider's current
+        pool domain (blenro.com, zelnro.com, ...). The pool rotates, so it
+        is sampled repeatedly via the scrape loop and retained.
+
+        Returns:
+            Single-element list with the sampled domain, or None on failure.
+        """
+        try:
+            res = httpx.post(
+                "https://5minmail.com/generate",
+                headers={
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0",
+                    "Content-Type": "application/json",
+                    "Referer": "https://5minmail.com/",
+                },
+                json={},
+                timeout=15,
+            ).json()
+            domain = str(res.get("email") or "").rpartition("@")[2].lower()
+            if not domain:
+                logging.warning("5minmail.com response has no email: %s", res)
+                return None
+            return [domain]
+        except Exception as e:
+            logging.warning("Failed to fetch 5minmail.com domain: %s", e)
+            return None
+
+    def _processMailper(self) -> Optional[List[str]]:
+        """Fetch the public domain pool of mailper.com.
+
+        The disposable-mailbox service exposes its pool through an
+        unauthenticated GraphQL ``publicDomains`` query.
+
+        Returns:
+            List of public pool domains, or None on failure.
+        """
+        try:
+            res = httpx.post(
+                "https://api.mailper.com/graphql",
+                headers={
+                    "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0",
+                    "Content-Type": "application/json",
+                },
+                json={"query": "query PublicDomains { publicDomains { domain } }"},
+                timeout=15,
+            ).json()
+            items = res.get("data", {}).get("publicDomains") or []
+            domains = {str(e["domain"]).lower() for e in items if isinstance(e, dict) and isinstance(e.get("domain"), str)}
+            return sorted(domains) or None
+        except Exception as e:
+            logging.warning("Failed to fetch mailper.com domains: %s", e)
             return None
 
     def _fakemail_generator_domains(self, base_url: str) -> Optional[List[str]]:
