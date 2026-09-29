@@ -125,6 +125,10 @@ def verify_source(source: Dict[str, Any]) -> Tuple[bool, str, int]:
             # Whitelist sources are handled differently
             return True, "Whitelist source (verified separately)", 0
 
+        if src_type == "whitelist_mailservices":
+            # mailservices.json is a whitelist preprocessing source, not a domain source
+            return True, "Mailservices whitelist source (verified separately)", 0
+
         if src_type == "greylist":
             # Greylist is a remote list (like 'list' type)
             pass  # Fall through to HTTP fetching
@@ -198,6 +202,11 @@ def verify_source(source: Dict[str, Any]) -> Tuple[bool, str, int]:
             fallback = [match.lower().strip(" .,;@") for match in DOMAIN_SEARCH_RE.findall(str(data))]
             domains = [d for d in fallback if check_valid_domain(d)]
 
+        if src_type == "greylist" and not domains:
+            # greylist.txt is an explicit-override file; empty (comments only) is
+            # a legitimate state while all entries are catalog-derived.
+            return True, "Greylist is empty (all entries catalog-derived)", 0
+
         return len(domains) > 0, f"Returned {len(domains)} valid domains", len(domains)
 
     except Exception as e:
@@ -216,7 +225,9 @@ def pytest_generate_tests(metafunc):
     if "source" in metafunc.fixturenames:
         sources = get_test_sources()
         # Filter out file sources that don't need network testing
-        test_sources = [s for s in sources if s.get("type") not in ("file", "whitelist", "whitelist_file")]
+        test_sources = [
+            s for s in sources if s.get("type") not in ("file", "whitelist", "whitelist_file", "whitelist_mailservices")
+        ]
         # Create test IDs from source URLs
         test_ids = []
         for s in test_sources:
@@ -240,14 +251,16 @@ class TestSources:
         src_url = source.get("src", "")
         src_type = source.get("type", "list")
 
-        # Skip file-based sources
-        if src_type in ("file", "whitelist", "whitelist_file"):
-            pytest.skip("File-based sources are tested separately")
+        # Skip file-based and whitelist sources
+        if src_type in ("file", "whitelist", "whitelist_file", "whitelist_mailservices"):
+            pytest.skip("File-based/whitelist sources are tested separately")
 
         success, message, count = verify_source(source)
 
         if not success:
             pytest.fail(f"Source failed: {src_url}\nReason: {message}")
 
-        # Assert that we got some data
+        # Assert that we got some data; greylist may legitimately be empty
+        if src_type == "greylist" and count == 0:
+            return
         assert count > 0, f"Source returned no valid data: {message}"

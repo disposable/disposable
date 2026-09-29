@@ -81,6 +81,7 @@ class disposableHostGenerator:
         {"type": "custom", "src": "TenMinutesEmail", "scrape": True, "retain": True},
         {"type": "custom", "src": "TempmailPro", "retain": True},
         {"type": "custom", "src": "TestinatorEmail", "retain": True},
+        {"type": "custom", "src": "TempFwd", "retain": True},
         {"type": "custom", "src": "Emailnator", "scrape": True, "retain": True},
         {"type": "custom", "src": "TmpAl", "retain": True},
         {"type": "custom", "src": "Boomlify", "retain": True},
@@ -704,21 +705,25 @@ class disposableHostGenerator:
             List of current pool domains, or None on failure.
         """
         ua = {"User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:145.0) Gecko/20100101 Firefox/145.0"}
-        try:
-            token = httpx.get("https://tmp.al/api/auth", headers=ua, timeout=15).json().get("access_token")
-            if not token:
-                logging.warning("tmp.al /api/auth returned no token")
-                return None
-            res = httpx.get(
-                "https://tmp.al/api/domains",
-                headers={**ua, "Authorization": f"Bearer {token}"},
-                timeout=15,
-            ).json()
-            domains = [str(d).lower() for d in res if isinstance(d, str)] if isinstance(res, list) else []
-            return sorted(domains) or None
-        except Exception as e:
-            logging.warning("Failed to fetch tmp.al domains: %s", e)
-            return None
+        for attempt in range(3):
+            try:
+                if attempt:
+                    time.sleep(2)
+                token = httpx.get("https://tmp.al/api/auth", headers=ua, timeout=15).json().get("access_token")
+                if not token:
+                    continue
+                res = httpx.get(
+                    "https://tmp.al/api/domains",
+                    headers={**ua, "Authorization": f"Bearer {token}"},
+                    timeout=15,
+                ).json()
+                domains = [str(d).lower() for d in res if isinstance(d, str)] if isinstance(res, list) else []
+                if domains:
+                    return sorted(domains)
+            except Exception as e:
+                logging.debug("tmp.al attempt %d failed: %s", attempt + 1, e)
+        logging.warning("Failed to fetch tmp.al domains after 3 attempts")
+        return None
 
     def _processTestinatorEmail(self) -> Optional[List[str]]:
         """Verify the testinator.email wildcard-mail service is live.
@@ -733,6 +738,21 @@ class disposableHostGenerator:
         if fetch_MX("testinator.email")[1]:
             return ["testinator.email"]
         logging.warning("testinator.email wildcard MX no longer resolves")
+        return None
+
+    def _processTempFwd(self) -> Optional[List[str]]:
+        """Verify the tempfwd.com burner-inbox service is live.
+
+        tempfwd.com issues disposable inboxes on its single apex domain
+        (MX mail.tempfwd.com); no domain pool to sample, so the domain is
+        emitted only while its MX confirms ingress.
+
+        Returns:
+            The base domain when reachable, or None when the service is gone.
+        """
+        if fetch_MX("tempfwd.com")[1]:
+            return ["tempfwd.com"]
+        logging.warning("tempfwd.com MX no longer resolves")
         return None
 
     def _processBoomlify(self) -> Optional[List[str]]:

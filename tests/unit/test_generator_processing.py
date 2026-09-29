@@ -585,6 +585,20 @@ class TestCustomSources:
         mock_mx.return_value = ("testinator.email", False)
         assert gen._processTestinatorEmail() is None
 
+    @patch("disposablehosts.generator.fetch_MX")
+    def test_process_tempfwd(self, mock_mx):
+        """TempFwd emits the base domain while its MX is live."""
+        gen = disposableHostGenerator()
+        mock_mx.return_value = ("tempfwd.com", True)
+        assert gen._processTempFwd() == ["tempfwd.com"]
+
+    @patch("disposablehosts.generator.fetch_MX")
+    def test_process_tempfwd_dead(self, mock_mx):
+        """TempFwd returns None once the MX is gone."""
+        gen = disposableHostGenerator()
+        mock_mx.return_value = ("tempfwd.com", False)
+        assert gen._processTempFwd() is None
+
     @patch("disposablehosts.generator.httpx.get")
     def test_process_boomlify(self, mock_get):
         """Boomlify source reads active domains from the public pool API."""
