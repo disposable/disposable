@@ -58,6 +58,22 @@ class disposableHostGenerator:
             "external": True,
             "src": "https://raw.githubusercontent.com/GeroldSetz/emailondeck.com-domains/refs/heads/master/emailondeck.com_domains_from_bdea.cc.txt",
         },
+        {"type": "list", "external": True, "src": "https://throwaway.cloud/list.txt"},
+        {
+            "type": "list",
+            "external": True,
+            "src": "https://raw.githubusercontent.com/castle/disposable-email-domains/master/disposable-email-domains.txt",
+        },
+        {
+            "type": "list",
+            "external": True,
+            "src": "https://raw.githubusercontent.com/jespernissen/disposable-maildomain-list/master/disposable-maildomain-list.txt",
+        },
+        {
+            "type": "list",
+            "external": True,
+            "src": "https://raw.githubusercontent.com/unkn0w/disposable-email-domain-list/main/domains.txt",
+        },
         {"type": "json", "src": "https://inboxes.com/api/v2/domain", "retain": True},
         {"type": "json", "src": "https://api.internal.temp-mail.io/api/v2/domains", "retain": True},
         {"type": "json", "src": "https://mailforspams.com/api/v1/domains", "retain": True},

@@ -95,6 +95,10 @@ Additionally, a run aborts without writing output if more than `--max-delta-rati
 |https://github.com/7c/fakefilter/|![GitHub last commit](https://img.shields.io/github/last-commit/7c/fakefilter)|
 |https://github.com/GeroldSetz/Mailinator-Domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/Mailinator-Domains)|
 |https://github.com/GeroldSetz/emailondeck.com-domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/emailondeck.com-domains)|
+|https://throwaway.cloud/|![GitHub last commit](https://img.shields.io/github/last-commit/iocium/download.throwaway.cloud)|
+|https://github.com/castle/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/castle/disposable-email-domains)|
+|https://github.com/jespernissen/disposable-maildomain-list/|![GitHub last commit](https://img.shields.io/github/last-commit/jespernissen/disposable-maildomain-list)|
+|https://github.com/unkn0w/disposable-email-domain-list/|![GitHub last commit](https://img.shields.io/github/last-commit/unkn0w/disposable-email-domain-list)|
 
 ## Credits
 
@@ -108,6 +112,10 @@ Additionally, a run aborts without writing output if more than `--max-delta-rati
 [@7c](https://github.com/7c)
 [@copini](https://github.com/copini)
 [@ZliIO](https://github.com/ZliIO)
+[@iocium](https://github.com/iocium)
+[@castle](https://github.com/castle)
+[@jespernissen](https://github.com/jespernissen)
+[@unkn0w](https://github.com/unkn0w)
 
 ### CDN
 
