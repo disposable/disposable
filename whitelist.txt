@@ -102,3 +102,7 @@ forwardemail.net
 # scrape artifacts of emailfake.com hostname - https://github.com/disposable/disposable/issues/290
 fake.com
 ke.com
+
+# Legitimate business domain; historical disposable-email association is obsolete
+# https://apleo.com
+apleo.com
