@@ -131,6 +131,23 @@ class TestApplyWhitelistExtended:
         assert "example.com" not in gen.domains
         assert "grey.com" in gen.domains  # Greylist kept when strict
 
+    def test_apply_whitelist_strict_grey_beats_maintained(self):
+        """Strict mode keeps greylisted domains out of the maintained whitelist."""
+        gen = disposableHostGenerator({"strict": True})
+        gen.domains = {"onet.pl", "plain.com", "exception.com"}
+        gen.skip = {"onet.pl", "plain.com", "exception.com"}
+        gen.maintained_whitelist = {"onet.pl", "plain.com"}
+        gen.grey = {"onet.pl"}
+
+        gen._apply_whitelist()
+
+        # onet.pl: maintained-whitelist + grey -> grey wins, kept for strict
+        assert "onet.pl" in gen.domains
+        # plain.com: maintained-whitelist only -> stripped
+        assert "plain.com" not in gen.domains
+        # exception.com: explicit whitelist + grey-free -> stripped
+        assert "exception.com" not in gen.domains
+
     def test_apply_whitelist_removes_sha1(self):
         """Test that whitelisted domains have their SHA1 removed."""
         gen = disposableHostGenerator()

@@ -1286,6 +1286,8 @@ class disposableHostGenerator:
         skip = self.skip.copy()
         if not self.options.get("strict"):
             skip.update(self.grey)
+        else:
+            skip -= self.grey & self.maintained_whitelist
 
         nameservers, dnsport, dns_timeout = self._get_dns_options()
 
