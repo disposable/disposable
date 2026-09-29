@@ -35,11 +35,13 @@ def _split_hosts(raw: dict) -> Tuple[Set[str], Set[str]]:
 
     A host that is greylist-eligible through any provider entry is never
     whitelisted, even if another entry lists it as whitelist-eligible.
+    Discontinued services are excluded from both tiers: they cannot sign
+    anyone up and no longer have legitimate use to protect.
     """
     whitelist: Set[str] = set()
     grey: Set[str] = set()
     for service in raw.values():
-        if not isinstance(service, dict):
+        if not isinstance(service, dict) or service.get("discontinued"):
             continue
         hosts = {str(host).lower() for host in service.get("hosts", []) if isinstance(host, str) and host}
         if not hosts:

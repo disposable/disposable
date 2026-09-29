@@ -70,7 +70,8 @@ class TestPreprocessData:
             "e": {"hosts": ["notype.com"]},
             "f": {"type": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
             "g": {"type": "free", "signup_verification": ["email"], "hosts": ["mailcheck.com"]},
-            "h": {"type": "free", "signup_verification": ["mobile", "email"], "hosts": ["mixedmail.com"]}
+            "h": {"type": "free", "signup_verification": ["mobile", "email"], "hosts": ["mixedmail.com"]},
+            "i": {"type": "free", "discontinued": true, "hosts": ["deadmail.com"]}
         }"""
         assert gen._preprocess_data(source, data) == [
             "b.org",
