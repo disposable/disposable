@@ -5,9 +5,8 @@ import logging
 from typing import List, Optional
 
 # Service types whose hosts are legitimate mail providers that must never
-# appear in the output. "forwarding" and "grey" are excluded on purpose:
-# alias services and abuse-prone freemail are handled by the greylist
-# (strict tier), not the whitelist.
+# appear in the output. "forwarding" is excluded on purpose: alias services
+# are handled by the greylist (strict tier), not the whitelist.
 WHITELIST_TYPES = frozenset({"free", "paid", "reserved"})
 
 
