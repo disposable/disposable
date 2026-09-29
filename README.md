@@ -83,6 +83,7 @@ Domains seen by sources we crawl ourselves are remembered in `source_cache.json`
 Additionally, a run aborts without writing output if more than `--max-delta-ratio` (default: 0.2, `0` disables) of the previous list would be removed, as mass removal usually indicates a source outage. Runs limited via `--src` or `--file` are exempt.
 
 ## External Sources:
+<!-- Disabled: no longer updated https://github.com/flotwig/disposable-email-addresses/ -->
 |Source|Status|
 |------|--:|
 |https://gist.github.com/adamloving/4401361/|![GitHub last update](https://img.shields.io/badge/dynamic/json?color=lightgray&style=flat&label=last%20update&query=%24.updated_at&url=https%3A%2F%2Fapi.github.com%2Fgists%2F4401361&cacheSeconds=86400)|
@@ -92,7 +93,6 @@ Additionally, a run aborts without writing output if more than `--max-delta-rati
 |https://github.com/daisy1754/jp-disposable-emails/|![GitHub last commit](https://img.shields.io/github/last-commit/daisy1754/jp-disposable-emails)|
 |https://github.com/FGRibreau/mailchecker/|![GitHub last commit](https://img.shields.io/github/last-commit/FGRibreau/mailchecker)|
 |https://github.com/7c/fakefilter/|![GitHub last commit](https://img.shields.io/github/last-commit/7c/fakefilter)|
-<!-- Disabled: no longer updated |https://github.com/flotwig/disposable-email-addresses/|![GitHub last commit](https://img.shields.io/github/last-commit/flotwig/disposable-email-addresses)| -->
 |https://github.com/GeroldSetz/Mailinator-Domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/Mailinator-Domains)|
 |https://github.com/GeroldSetz/emailondeck.com-domains|![GitHub last commit](https://img.shields.io/github/last-commit/GeroldSetz/emailondeck.com-domains)|
 |https://www.rotvpn.com/en/disposable-email||
@@ -100,17 +100,12 @@ Additionally, a run aborts without writing output if more than `--max-delta-rati
 ## Credits
 
 [@adamloving](https://github.com/adamloving)
-[@michenriksen](https://github.com/michenriksen)
-[@ivolo](https://github.com/ivolo)
 [@smeinecke](https://github.com/smeinecke)
 [@GeroldSetz](https://github.com/GeroldSetz)
 [@martenson](https://github.com/martenson)
 [@FGRibreau](https://github.com/FGRibreau)
 [@daisy1754](https://github.com/daisy1754)
-[@jamesonev](https://github.com/jamesonev)
 [@wesbos](https://github.com/wesbos)
-[@willwhite](https://github.com/willwhite)
-[@stopforumspam](https://github.com/stopforumspam)
 [@7c](https://github.com/7c)
 [@copini](https://github.com/copini)
 [@ZliIO](https://github.com/ZliIO)
