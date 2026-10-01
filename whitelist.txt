@@ -102,3 +102,6 @@ forwardemail.net
 # scrape artifacts of emailfake.com hostname - https://github.com/disposable/disposable/issues/290
 fake.com
 ke.com
+
+# European Connections Inc business domain (Rackspace-hosted since ~2015, registered 2005) - false positive
+ecmail.com
