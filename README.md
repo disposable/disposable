@@ -99,6 +99,7 @@ Additionally, a run aborts without writing output if more than `--max-delta-rati
 |https://github.com/castle/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/castle/disposable-email-domains)|
 |https://github.com/jespernissen/disposable-maildomain-list/|![GitHub last commit](https://img.shields.io/github/last-commit/jespernissen/disposable-maildomain-list)|
 |https://github.com/unkn0w/disposable-email-domain-list/|![GitHub last commit](https://img.shields.io/github/last-commit/unkn0w/disposable-email-domain-list)|
+|https://github.com/catalystprimeagent-bot/disposable-email-domains/|![GitHub last commit](https://img.shields.io/github/last-commit/catalystprimeagent-bot/disposable-email-domains)|
 
 ## Credits
 
