@@ -102,3 +102,7 @@ forwardemail.net
 # scrape artifacts of emailfake.com hostname - https://github.com/disposable/disposable/issues/290
 fake.com
 ke.com
+
+# Windows Catering - real business domain (event catering, DC/VA/MD), mail on Microsoft 365, not disposable
+# https://catering.com
+catering.com
