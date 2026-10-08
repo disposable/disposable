@@ -77,6 +77,39 @@ def preprocess_mailservices(data: bytes, encoding: str = "utf-8") -> Optional[Li
     return sorted(whitelist)
 
 
+def preprocess_mailservices_forwarding(data: bytes, encoding: str = "utf-8") -> Optional[dict]:
+    """Extract forwarding/alias-type service hosts with provider metadata.
+
+    Returns:
+        Dict mapping each host to {"svc", "type", "verification", "remark"},
+        or None if invalid/empty.
+    """
+    raw = _parse(data, encoding)
+    if raw is None:
+        return None
+
+    result = {}
+    for name, service in raw.items():
+        if not isinstance(service, dict) or service.get("discontinued"):
+            continue
+        if service.get("type") != "forwarding":
+            continue
+        meta = {
+            "svc": name,
+            "type": "forwarding",
+            "verification": service.get("signup_verification") or [],
+        }
+        if service.get("remark"):
+            meta["remark"] = service["remark"]
+        for host in service.get("hosts", []):
+            if isinstance(host, str) and host:
+                result[host.lower()] = meta
+    if not result:
+        logging.warning("No forwarding-type hosts in mailservices.json")
+        return None
+    return result
+
+
 def preprocess_mailservices_grey(data: bytes, encoding: str = "utf-8") -> Optional[List[str]]:
     """Extract domain hosts of greylist-eligible service types.
 

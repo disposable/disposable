@@ -155,6 +155,7 @@ def main() -> None:
             exit_status = 0
             dhg.write_to_file()
             if options.dedicated_strict:
+                dhg.write_forwarding_files()
                 dhg.add_greylist()
                 dhg.out_file = "domains_strict"
                 dhg.write_to_file()

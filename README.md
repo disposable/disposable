@@ -38,6 +38,16 @@ For more informations, please check Issue  [#81](https://github.com/disposable/d
 curl https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains_strict.txt
 ```
 
+### Forwarding List
+A [file](https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains_forwarding.txt)
+combining all disposable domains with alias/forwarding services (SimpleLogin, Firefox Relay, Apple Hide My Email, ...) - without freemail mailbox providers.
+This matches what the strict list covered before the 2025-10 mailservices refactor; use it to block disposable and aliasing addresses while still accepting freemail signups.
+A companion [domains_forwarding.json](https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains_forwarding.json) maps each domain to its metadata (provider name, service type, verification, contributing sources).
+
+```shell
+curl https://raw.githubusercontent.com/disposable/disposable-email-domains/master/domains_forwarding.txt
+```
+
 ### Java
 
 Checkout [ZliIO/zliio-disposable](https://github.com/ZliIO/zliio-disposable) - thanks @ZliIO for the implementation in Java.

@@ -223,6 +223,8 @@ class disposableHostGenerator:
         self.sha1: Set[str] = set()
         self.skip: Set[str] = set()
         self.grey: Set[str] = set()
+        self.forwarding: Set[str] = set()
+        self.forwarding_meta: Dict[str, dict] = {}
         self.maintained_whitelist: Set[str] = set()
         self.source_map: Dict[str, Union[Set[str], List[str]]] = {}
         self.domain_seen: Dict[str, Set[str]] = {}
@@ -356,6 +358,48 @@ class disposableHostGenerator:
 
         return None
 
+    def _apply_whitelist_entries(self, source: Dict[str, Any], data: bytes) -> None:
+        """Apply whitelist entries, honoring "# expires on: YYYY-MM-DD" comments.
+
+        Expired entries are ignored (e.g. temporary whitelist bridges while
+        upstream removal is pending). Parsed from raw data since preprocessing
+        strips comment lines.
+        """
+        today = datetime.date.today()
+        pending_expiry: Optional[datetime.date] = None
+        for raw in data.decode(source.get("encoding", "utf-8"), "replace").splitlines():
+            line = raw.strip()
+            m = re.match(r"^#\s*expires\s+on:\s*(\S+)", line, re.I)
+            if m:
+                try:
+                    pending_expiry = datetime.date.fromisoformat(m.group(1))
+                except ValueError:
+                    logging.warning("Invalid expiry date in whitelist comment: %s", line)
+                continue
+            if not line or line.startswith("#"):
+                continue
+            host = line.lower().strip(" .,;@")
+            expiry, pending_expiry = pending_expiry, None
+            if expiry and expiry < today:
+                logging.info("Ignoring expired whitelist entry: %s", host)
+                continue
+            if self.check_valid_domains(host):
+                self.skip.add(host)
+
+    def _postprocess_mailservices(self, source: Dict[str, Any], data: bytes, lines_filtered: List[str]) -> None:
+        """Apply whitelist_mailservices: whitelist + grey tier + forwarding set."""
+        from .preprocessing.mailservices import preprocess_mailservices_forwarding, preprocess_mailservices_grey
+
+        self.skip.update(lines_filtered)
+        self.maintained_whitelist.update(lines_filtered)
+        for host in preprocess_mailservices_grey(data, source.get("encoding", "utf-8")) or []:
+            if self.check_valid_domains(host):
+                self.grey.add(host)
+        for host, meta in (preprocess_mailservices_forwarding(data, source.get("encoding", "utf-8")) or {}).items():
+            if self.check_valid_domains(host):
+                self.forwarding.add(host)
+                self.forwarding_meta[host] = meta
+
     def _postprocess_data(self, source: Dict[str, Any], data: bytes, lines: List[str]) -> Union[bool, Tuple[int, int]]:
         """Post-process data obtained from a source.
 
@@ -371,30 +415,7 @@ class disposableHostGenerator:
         lines_filtered = self._filter_source_hosts(source, data, lines)
 
         if source["type"] in ("whitelist", "whitelist_file"):
-            # Entries may be preceded by a "# expires on: YYYY-MM-DD" comment
-            # for temporary whitelist bridges (e.g. while upstream removal is
-            # pending); expired entries are ignored. Parsed from raw data since
-            # preprocessing strips comment lines.
-            today = datetime.date.today()
-            pending_expiry: Optional[datetime.date] = None
-            for raw in data.decode(source.get("encoding", "utf-8"), "replace").splitlines():
-                line = raw.strip()
-                m = re.match(r"^#\s*expires\s+on:\s*(\S+)", line, re.I)
-                if m:
-                    try:
-                        pending_expiry = datetime.date.fromisoformat(m.group(1))
-                    except ValueError:
-                        logging.warning("Invalid expiry date in whitelist comment: %s", line)
-                    continue
-                if not line or line.startswith("#"):
-                    continue
-                host = line.lower().strip(" .,;@")
-                expiry, pending_expiry = pending_expiry, None
-                if expiry and expiry < today:
-                    logging.info("Ignoring expired whitelist entry: %s", host)
-                    continue
-                if self.check_valid_domains(host):
-                    self.skip.add(host)
+            self._apply_whitelist_entries(source, data)
             return True
 
         if source["type"] == "sha1":
@@ -402,13 +423,7 @@ class disposableHostGenerator:
             return True
 
         if source["type"] == "whitelist_mailservices":
-            self.skip.update(lines_filtered)
-            self.maintained_whitelist.update(lines_filtered)
-            from .preprocessing.mailservices import preprocess_mailservices_grey
-
-            for host in preprocess_mailservices_grey(data, source.get("encoding", "utf-8")) or []:
-                if self.check_valid_domains(host):
-                    self.grey.add(host)
+            self._postprocess_mailservices(source, data, lines_filtered)
             return True
 
         if source["type"] in ("greylist", "greylist_file"):
@@ -1533,6 +1548,33 @@ class disposableHostGenerator:
         changed = self._log_generation_results()
         self._enforce_max_delta()
         return changed
+
+    def write_forwarding_files(self) -> None:
+        """Write domains_forwarding.txt/.json - disposable domains plus
+        forwarding/alias services (the pre-2025-10 strict semantics).
+
+        The .txt is a plain domain list; the .json carries per-domain
+        metadata (service name, type, verification) for forwarding hosts
+        and the contributing sources for disposable domains.
+        """
+        combined = sorted(self.domains | self.forwarding)
+        out_dir = os.path.dirname(self.out_file) or "."
+        with open(os.path.join(out_dir, "domains_forwarding.txt"), "w") as ff:
+            ff.write("\n".join(combined))
+
+        src_by_domain: Dict[str, List[str]] = {}
+        for src_url, src_domains in self.source_map.items():
+            for domain in src_domains:
+                src_by_domain.setdefault(domain, []).append(src_url)
+
+        meta: Dict[str, dict] = {}
+        for domain in combined:
+            if domain in self.forwarding_meta:
+                meta[domain] = self.forwarding_meta[domain]
+            else:
+                meta[domain] = {"type": "disposable", "src": sorted(src_by_domain.get(domain, []))}
+        with open(os.path.join(out_dir, "domains_forwarding.json"), "w") as ff:
+            ff.write(json.dumps(meta, indent=1, sort_keys=True))
 
     def write_to_file(self) -> None:
         """Write new list to file(s)."""

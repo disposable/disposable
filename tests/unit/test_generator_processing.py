@@ -7,6 +7,7 @@ Tests cover:
 - Fallback domain extraction
 """
 
+import json
 import logging
 from unittest.mock import patch
 
@@ -221,6 +222,45 @@ class TestPostprocessData:
         result = gen._postprocess_data(source, data, ["baddate-domain.com"])
         assert result is True
         assert "baddate-domain.com" in gen.skip
+
+    def test_postprocess_mailservices_collects_forwarding(self):
+        """whitelist_mailservices collects forwarding hosts with metadata."""
+        gen = disposableHostGenerator()
+        source = {"type": "whitelist_mailservices", "src": "mailservices.json"}
+        data = json.dumps({
+            "relay.example": {
+                "hosts": ["alias.example.com"],
+                "type": "forwarding",
+                "signup_verification": ["email"],
+                "remark": "alias service",
+            },
+            "free.example": {
+                "hosts": ["free.example.com"],
+                "type": "free",
+                "signup_verification": ["mobile"],
+            },
+        }).encode()
+        result = gen._postprocess_data(source, data, ["free.example.com"])
+        assert result is True
+        assert "alias.example.com" in gen.forwarding
+        assert gen.forwarding_meta["alias.example.com"]["svc"] == "relay.example"
+        assert "free.example.com" not in gen.forwarding
+        assert "free.example.com" in gen.skip
+
+    def test_write_forwarding_files(self, tmp_path):
+        """domains_forwarding.txt/.json merge domains with forwarding hosts."""
+        gen = disposableHostGenerator(out_file=str(tmp_path / "domains"))
+        gen.domains = {"temp-domain.com"}
+        gen.source_map = {"https://example.com/list.txt": {"temp-domain.com"}}
+        gen.forwarding = {"alias.example.com"}
+        gen.forwarding_meta = {"alias.example.com": {"svc": "relay.example", "type": "forwarding", "verification": ["email"]}}
+        gen.write_forwarding_files()
+        txt = (tmp_path / "domains_forwarding.txt").read_text()
+        meta = json.loads((tmp_path / "domains_forwarding.json").read_text())
+        assert txt.splitlines() == ["alias.example.com", "temp-domain.com"]
+        assert meta["alias.example.com"]["svc"] == "relay.example"
+        assert meta["temp-domain.com"]["type"] == "disposable"
+        assert meta["temp-domain.com"]["src"] == ["https://example.com/list.txt"]
 
     def test_postprocess_greylist(self):
         """Test postprocessing greylist source."""
