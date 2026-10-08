@@ -371,21 +371,28 @@ class disposableHostGenerator:
         lines_filtered = self._filter_source_hosts(source, data, lines)
 
         if source["type"] in ("whitelist", "whitelist_file"):
-            # Entries may carry an expiry as "domain;YYYY-MM-DD" - expired
-            # entries are ignored (e.g. temporary whitelist bridges while
-            # upstream removal is pending).
+            # Entries may be preceded by a "# expires on: YYYY-MM-DD" comment
+            # for temporary whitelist bridges (e.g. while upstream removal is
+            # pending); expired entries are ignored. Parsed from raw data since
+            # preprocessing strips comment lines.
             today = datetime.date.today()
-            for raw_line in lines:
-                host = raw_line.lower().strip(" .,;@")
-                if ";" in host:
-                    host, _, exp = host.partition(";")
-                    host = host.strip(" .,;@")
+            pending_expiry: Optional[datetime.date] = None
+            for raw in data.decode(source.get("encoding", "utf-8"), "replace").splitlines():
+                line = raw.strip()
+                m = re.match(r"^#\s*expires\s+on:\s*(\S+)", line, re.I)
+                if m:
                     try:
-                        if datetime.date.fromisoformat(exp.strip()) < today:
-                            logging.info("Ignoring expired whitelist entry: %s", host)
-                            continue
+                        pending_expiry = datetime.date.fromisoformat(m.group(1))
                     except ValueError:
-                        logging.warning("Invalid expiry date in whitelist entry: %s", raw_line)
+                        logging.warning("Invalid expiry date in whitelist comment: %s", line)
+                    continue
+                if not line or line.startswith("#"):
+                    continue
+                host = line.lower().strip(" .,;@")
+                expiry, pending_expiry = pending_expiry, None
+                if expiry and expiry < today:
+                    logging.info("Ignoring expired whitelist entry: %s", host)
+                    continue
                 if self.check_valid_domains(host):
                     self.skip.add(host)
             return True

@@ -184,25 +184,41 @@ class TestPostprocessData:
         assert "test.org" in gen.skip
 
     def test_postprocess_whitelist_with_expiry(self):
-        """Whitelist entries with ";YYYY-MM-DD" expire after that date."""
+        """'# expires on: YYYY-MM-DD' comments expire the following entry."""
         import datetime
 
         gen = disposableHostGenerator()
         source = {"type": "whitelist", "src": "whitelist.txt"}
         future = (datetime.date.today() + datetime.timedelta(days=30)).isoformat()
         past = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
-        lines = [f"active-domain.com;{future}", f"expired-domain.com;{past}", "plain-domain.org"]
-        result = gen._postprocess_data(source, b"", lines)
+        data = (f"# expires on: {future}\nactive-domain.com\n# expires on: {past}\nexpired-domain.com\nplain-domain.org\n").encode()
+        # lines arrive preprocessed (comment lines already stripped)
+        lines = ["active-domain.com", "expired-domain.com", "plain-domain.org"]
+        result = gen._postprocess_data(source, data, lines)
         assert result is True
         assert "active-domain.com" in gen.skip
         assert "expired-domain.com" not in gen.skip
         assert "plain-domain.org" in gen.skip
 
+    def test_postprocess_whitelist_expiry_only_next_line(self):
+        """An expiry comment applies to the next entry only."""
+        import datetime
+
+        gen = disposableHostGenerator()
+        source = {"type": "whitelist", "src": "whitelist.txt"}
+        past = (datetime.date.today() - datetime.timedelta(days=30)).isoformat()
+        data = (f"# expires on: {past}\nexpired-domain.com\nother-domain.org\n").encode()
+        result = gen._postprocess_data(source, data, ["expired-domain.com", "other-domain.org"])
+        assert result is True
+        assert "expired-domain.com" not in gen.skip
+        assert "other-domain.org" in gen.skip
+
     def test_postprocess_whitelist_invalid_expiry_keeps_entry(self):
         """A malformed expiry date warns but still whitelists the domain."""
         gen = disposableHostGenerator()
         source = {"type": "whitelist", "src": "whitelist.txt"}
-        result = gen._postprocess_data(source, b"", ["baddate-domain.com;not-a-date"])
+        data = b"# expires on: not-a-date\nbaddate-domain.com\n"
+        result = gen._postprocess_data(source, data, ["baddate-domain.com"])
         assert result is True
         assert "baddate-domain.com" in gen.skip
 

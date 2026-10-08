@@ -102,3 +102,11 @@ forwardemail.net
 # scrape artifacts of emailfake.com hostname - https://github.com/disposable/disposable/issues/290
 fake.com
 ke.com
+
+# temporary bridges while upstream removal is pending - re-list if still needed after expiry
+# expires on: 2026-12-07
+taylorventuresllc.com
+# expires on: 2026-12-07
+faktionlabs.com
+# expires on: 2026-12-07
+shopeeboost.com
