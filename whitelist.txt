@@ -114,5 +114,3 @@ shopeeboost.com
 apleo.com
 # expires on: 2026-12-07
 ecmail.com
-# Safe-mail.net - secure email provider (SSL Capital), adamloving gist source is immutable
-safe-mail.net
