@@ -83,7 +83,9 @@ def validate(
             for line in response:
                 line = line.decode("utf-8").strip()
                 if line.endswith(f":{domain}"):
-                    actual_sources.append(line.rsplit(":", 1)[0])
+                    src = line.rsplit(":", 1)[0]
+                    if src not in actual_sources:
+                        actual_sources.append(src)
 
     managed_sources = get_managed_sources(generator_path)
     has_managed_source = any(src in managed_sources for src in actual_sources)

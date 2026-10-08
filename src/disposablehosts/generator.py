@@ -1,6 +1,7 @@
 """Main disposable email domain generator class."""
 
 import concurrent.futures
+import datetime
 import hashlib
 import json
 import logging
@@ -369,7 +370,27 @@ class disposableHostGenerator:
         """
         lines_filtered = self._filter_source_hosts(source, data, lines)
 
-        if source["type"] in ("whitelist", "whitelist_file", "sha1"):
+        if source["type"] in ("whitelist", "whitelist_file"):
+            # Entries may carry an expiry as "domain;YYYY-MM-DD" - expired
+            # entries are ignored (e.g. temporary whitelist bridges while
+            # upstream removal is pending).
+            today = datetime.date.today()
+            for raw_line in lines:
+                host = raw_line.lower().strip(" .,;@")
+                if ";" in host:
+                    host, _, exp = host.partition(";")
+                    host = host.strip(" .,;@")
+                    try:
+                        if datetime.date.fromisoformat(exp.strip()) < today:
+                            logging.info("Ignoring expired whitelist entry: %s", host)
+                            continue
+                    except ValueError:
+                        logging.warning("Invalid expiry date in whitelist entry: %s", raw_line)
+                if self.check_valid_domains(host):
+                    self.skip.add(host)
+            return True
+
+        if source["type"] == "sha1":
             self.skip.update(lines_filtered)
             return True
 
