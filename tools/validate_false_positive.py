@@ -122,6 +122,9 @@ def build_comment(
             f"To have your domain removed, you must report the false positive to each source directly:\n\n"
             f"{sources_block}\n\n"
             f"Once the source(s) remove your domain, it will automatically disappear from our list at the next update.\n\n"
+            f"If the listing is actively hurting you (e.g. mail delivery being rejected), we can add the domain "
+            f"to our whitelist temporarily while upstream removal is pending - entries carry an expiry date, "
+            f"so it is a bridge, not a permanent fix. Reply to this issue if you want that.\n\n"
             f"This issue will remain closed. Please reply if you need it reopened after the source(s) have been updated."
         )
 
