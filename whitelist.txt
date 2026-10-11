@@ -114,3 +114,7 @@ shopeeboost.com
 apleo.com
 # expires on: 2026-12-07
 ecmail.com
+# expires on: 2026-12-07
+waroengkuy.com
+# expires on: 2026-12-07
+waroengin.com
