@@ -103,6 +103,9 @@ forwardemail.net
 fake.com
 ke.com
 
+# company domain, owner changed - https://github.com/ivolo/disposable-email-domains/pull/992
+zobi.com
+
 # temporary bridges while upstream removal is pending - re-list if still needed after expiry
 # expires on: 2026-12-07
 taylorventuresllc.com
