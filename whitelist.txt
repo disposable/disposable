@@ -118,3 +118,5 @@ ecmail.com
 waroengkuy.com
 # expires on: 2026-12-07
 waroengin.com
+# expires on: 2026-12-14
+zobi.com
