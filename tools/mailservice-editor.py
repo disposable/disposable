@@ -4,7 +4,7 @@ import os
 import sys
 from typing import List, Optional
 
-from verify_data import ALLOWED_TYPES, ALLOWED_VERIFICATIONS
+from verify_data import ALLOWED_COSTS, ALLOWED_TYPES, ALLOWED_VERIFICATIONS
 
 
 def load_json(file_path):
@@ -26,7 +26,8 @@ def update_json(
     service: str,
     hosts: Optional[List[str]] = None,
     mx_hosts: Optional[List[str]] = None,
-    account_type: Optional[str] = None,
+    costs: Optional[str] = None,
+    service_type: Optional[str] = None,
     signup_verification: Optional[str] = None,
 ) -> None:
     """Update or add a domain entry in the JSON file.
@@ -36,7 +37,8 @@ def update_json(
         domain: Domain name to update/add.
         hosts: List of hostnames.
         mx_hosts: List of MX hostnames.
-        account_type: Type of the account.
+        costs: Pricing class of the service.
+        service_type: Category of the service.
         signup_verification: Verification method used during signup.
     """
     data = load_json(file_path)
@@ -64,11 +66,17 @@ def update_json(
         if mx_hosts:
             data[service]["mx_hosts"] = mx_hosts
 
-    if account_type:
-        if account_type not in ALLOWED_TYPES:
-            print(f"Invalid account type: {account_type}")
+    if costs:
+        if costs not in ALLOWED_COSTS:
+            print(f"Invalid costs: {costs}")
             sys.exit(1)
-        data[service]["type"] = account_type
+        data[service]["costs"] = costs
+
+    if service_type:
+        if service_type not in ALLOWED_TYPES:
+            print(f"Invalid service type: {service_type}")
+            sys.exit(1)
+        data[service]["type"] = service_type
 
     if signup_verification:
         if signup_verification not in ALLOWED_VERIFICATIONS:
@@ -88,7 +96,8 @@ if __name__ == "__main__":
     parser.add_argument("--host", action="append", default=[], help="Hostnames (can be used multiple times).")
     parser.add_argument("--mx-host", action="append", default=[], help="MX Hostnames (can be used multiple times).")
     parser.add_argument("--stdin", action="store_true", help="Read hosts from stdin (line by line).")
-    parser.add_argument("--type", choices=ALLOWED_TYPES, help="Account type (free or paid).")
+    parser.add_argument("--costs", choices=ALLOWED_COSTS, help="Pricing class (free/paid/freemium).")
+    parser.add_argument("--type", choices=ALLOWED_TYPES, help="Service category (mailbox/forwarding/isp/hosting/reserved).")
     parser.add_argument("--verify", choices=ALLOWED_VERIFICATIONS, help="Signup verification type.")
 
     args = parser.parse_args()
@@ -102,4 +111,4 @@ if __name__ == "__main__":
     all_hosts = args.host + stdin_hosts
     all_mx_hosts = args.mx_host  # MX hosts are not read from stdin
 
-    update_json(args.file, args.service, all_hosts, all_mx_hosts, args.type, args.verify)
+    update_json(args.file, args.service, all_hosts, all_mx_hosts, args.costs, args.type, args.verify)

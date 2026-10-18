@@ -64,20 +64,22 @@ class TestPreprocessData:
         gen = disposableHostGenerator()
         source = {"type": "whitelist_mailservices"}
         data = b"""{
-            "a": {"type": "free", "hosts": ["FreeMail.com", "b.org"]},
-            "b": {"type": "paid", "signup_verification": "mobile", "hosts": ["paidmail.com"]},
+            "a": {"type": "mailbox", "costs": "free", "hosts": ["FreeMail.com", "b.org"]},
+            "b": {"type": "mailbox", "costs": "paid", "signup_verification": "mobile", "hosts": ["paidmail.com"]},
             "c": {"type": "forwarding", "hosts": ["alias.io"]},
             "d": {"type": "reserved", "hosts": ["example.edu"]},
             "e": {"hosts": ["notype.com"]},
-            "f": {"type": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
-            "g": {"type": "free", "signup_verification": ["email"], "hosts": ["mailcheck.com"]},
-            "h": {"type": "free", "signup_verification": ["mobile", "email"], "hosts": ["mixedmail.com"]},
-            "i": {"type": "free", "discontinued": true, "hosts": ["deadmail.com"]}
+            "f": {"type": "mailbox", "costs": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
+            "g": {"type": "mailbox", "costs": "free", "signup_verification": ["email"], "hosts": ["mailcheck.com"]},
+            "h": {"type": "mailbox", "costs": "free", "signup_verification": ["mobile", "email"], "hosts": ["mixedmail.com"]},
+            "i": {"type": "mailbox", "costs": "free", "discontinued": true, "hosts": ["deadmail.com"]},
+            "j": {"type": "free", "hosts": ["legacymail.com"]}
         }"""
         assert gen._preprocess_data(source, data) == [
             "b.org",
             "example.edu",
             "freemail.com",
+            "legacymail.com",
             "paidmail.com",
         ]
 
@@ -87,12 +89,12 @@ class TestPreprocessData:
 
         data = b"""{
             "a": {"type": "forwarding", "signup_verification": "payment", "hosts": ["alias.io"]},
-            "b": {"type": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
-            "c": {"type": "free", "signup_verification": ["email"], "hosts": ["mailcheck.com"]},
-            "d": {"type": "free", "signup_verification": ["mobile", "email"], "hosts": ["mixedmail.com"]},
-            "e": {"type": "free", "signup_verification": "mobile", "hosts": ["verified.com"]},
-            "f": {"type": "free", "hosts": ["unsetmail.com"]},
-            "g": {"type": "paid", "signup_verification": "email", "hosts": ["paidanon.com"]},
+            "b": {"type": "mailbox", "costs": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
+            "c": {"type": "mailbox", "costs": "free", "signup_verification": ["email"], "hosts": ["mailcheck.com"]},
+            "d": {"type": "mailbox", "costs": "free", "signup_verification": ["mobile", "email"], "hosts": ["mixedmail.com"]},
+            "e": {"type": "mailbox", "costs": "free", "signup_verification": "mobile", "hosts": ["verified.com"]},
+            "f": {"type": "mailbox", "costs": "free", "hosts": ["unsetmail.com"]},
+            "g": {"type": "isp", "costs": "paid", "signup_verification": "email", "hosts": ["paidanon.com"]},
             "h": {"type": "reserved", "hosts": ["example.edu"]}
         }"""
         assert preprocess_mailservices_grey(data) == [
@@ -111,8 +113,8 @@ class TestPreprocessData:
         )
 
         data = b"""{
-            "a": {"type": "free", "signup_verification": "none", "hosts": ["shared.com"]},
-            "b": {"type": "free", "signup_verification": "mobile", "hosts": ["shared.com", "ok.com"]}
+            "a": {"type": "mailbox", "costs": "free", "signup_verification": "none", "hosts": ["shared.com"]},
+            "b": {"type": "mailbox", "costs": "free", "signup_verification": "mobile", "hosts": ["shared.com", "ok.com"]}
         }"""
         assert preprocess_mailservices(data) == ["ok.com"]
         assert preprocess_mailservices_grey(data) == ["shared.com"]
@@ -138,8 +140,8 @@ class TestPreprocessData:
         source = {"type": "whitelist_mailservices", "src": "x"}
         data = b"""{
             "a": {"type": "forwarding", "hosts": ["alias.io"]},
-            "b": {"type": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
-            "c": {"type": "free", "signup_verification": "mobile", "hosts": ["verified.com"]}
+            "b": {"type": "mailbox", "costs": "free", "signup_verification": "none", "hosts": ["anonmail.com"]},
+            "c": {"type": "mailbox", "costs": "free", "signup_verification": "mobile", "hosts": ["verified.com"]}
         }"""
         assert gen._postprocess_data(source, data, ["verified.com"]) is True
         assert "verified.com" in gen.maintained_whitelist

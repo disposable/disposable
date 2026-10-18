@@ -5,7 +5,8 @@ import sys
 import argparse
 import re
 
-ALLOWED_TYPES = ["free", "paid", "forwarding"]
+ALLOWED_COSTS = ["free", "paid", "freemium"]
+ALLOWED_TYPES = ["mailbox", "forwarding", "isp", "hosting", "reserved"]
 ALLOWED_VERIFICATIONS = ["none", "email", "mobile", "payment", "other"]
 
 
@@ -21,8 +22,10 @@ def validate_mailservices(filename: str):
     The expected structure is a dictionary with service names as keys. Each service
     has a dictionary with the following keys:
         hosts: a list of strings representing the hostnames of the service.
-        type: a string indicating the type of the service. Possible values are
-            'free' and 'paid'.
+        type: a string indicating the service category. Possible values are
+            'mailbox', 'forwarding', 'isp', 'hosting' and 'reserved'.
+        costs: a string indicating the pricing class of the service. Possible
+            values are 'free', 'paid' and 'freemium'.
         signup_verification: a string indicating the verification method used
             during signup. Possible values are 'none', 'email', 'mobile', 'payment',
             and 'other'.
@@ -101,6 +104,9 @@ def validate_mailservices(filename: str):
 
         if service_options.get("type") and service_options["type"] not in ALLOWED_TYPES:
             errors.append("Type {} for service {} is unknown.".format(service_options["type"], service_name))
+
+        if service_options.get("costs") and service_options["costs"] not in ALLOWED_COSTS:
+            errors.append("Costs {} for service {} is unknown.".format(service_options["costs"], service_name))
 
         if service_options.get("signup_verification") and service_options["signup_verification"] not in ALLOWED_VERIFICATIONS:
             errors.append("Verification {} for service {} is unknown.".format(service_options["signup_verification"], service_name))

@@ -4,18 +4,38 @@ import json
 import logging
 from typing import List, Optional, Set, Tuple
 
-# Service types whose hosts are legitimate mail providers that must never
+# Pricing classes whose hosts are legitimate mail providers that must never
 # appear in the output.
-WHITELIST_TYPES = frozenset({"free", "paid", "reserved"})
+WHITELIST_COSTS = frozenset({"free", "paid", "freemium"})
 
-# Service types that are always greylist-eligible (strict tier): alias and
+# Service categories whose hosts are legitimate special-use names.
+WHITELIST_TYPES = frozenset({"reserved"})
+
+# Service categories that are always greylist-eligible (strict tier): alias and
 # forwarding services regardless of their signup verification.
 GREY_TYPES = frozenset({"forwarding"})
 
-# Signup verifications that still allow anonymous use. Providers with free/
-# paid type that offer any of these are greylist-eligible (strict tier)
-# instead of whitelisted; unset verification never counts as anonymous.
+# Signup verifications that still allow anonymous use. Priced providers that
+# offer any of these are greylist-eligible (strict tier) instead of
+# whitelisted; unset verification never counts as anonymous.
 ANON_SIGNUP_VERIFICATIONS = frozenset({"none", "email"})
+
+# Pricing values stored under `type` before the costs/type field split.
+_LEGACY_PRICE_TYPES = frozenset({"free", "paid", "freemium"})
+
+
+def _service_fields(service: dict) -> Tuple[Optional[str], Optional[str]]:
+    """Return (category, pricing) for a service entry.
+
+    Tolerates the legacy format where `type` held the pricing class:
+    old `type` values free/paid/freemium are read as `costs`, category
+    values (forwarding/reserved/...) stay `type`.
+    """
+    svc_type = service.get("type")
+    costs = service.get("costs")
+    if costs is None and svc_type in _LEGACY_PRICE_TYPES:
+        costs, svc_type = svc_type, None
+    return svc_type, costs
 
 
 def _parse(data: bytes, encoding: str) -> Optional[dict]:
@@ -46,12 +66,12 @@ def _split_hosts(raw: dict) -> Tuple[Set[str], Set[str]]:
         hosts = {str(host).lower() for host in service.get("hosts", []) if isinstance(host, str) and host}
         if not hosts:
             continue
-        svc_type = service.get("type")
+        svc_type, costs = _service_fields(service)
         verification = service.get("signup_verification")
         verifications = {verification} if isinstance(verification, str) else set(verification or [])
-        if svc_type in GREY_TYPES or (svc_type in ("free", "paid") and verifications & ANON_SIGNUP_VERIFICATIONS):
+        if svc_type in GREY_TYPES or (costs in WHITELIST_COSTS and verifications & ANON_SIGNUP_VERIFICATIONS):
             grey.update(hosts)
-        elif svc_type in WHITELIST_TYPES:
+        elif costs in WHITELIST_COSTS or svc_type in WHITELIST_TYPES:
             whitelist.update(hosts)
     return whitelist - grey, grey
 
